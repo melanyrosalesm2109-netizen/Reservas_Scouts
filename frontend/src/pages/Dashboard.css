@@ -1,0 +1,709 @@
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+.dashboard-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+
+/* =====================================================
+   ENCABEZADO
+===================================================== */
+
+.dashboard-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 25px;
+}
+
+.dashboard-eyebrow {
+  color: #af7b36;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 2px;
+}
+
+.dashboard-top h1 {
+  margin: 5px 0 2px;
+
+  color: #0c3047;
+
+  font-family: Georgia, serif;
+  font-size: 39px;
+}
+
+.dashboard-top p {
+  margin: 0;
+
+  color: #747c82;
+
+  font-size: 14px;
+}
+
+.dashboard-new {
+  min-width: 165px;
+  height: 47px;
+
+  padding: 0 19px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  border: none;
+  border-radius: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0c3047,
+      #19516d
+    );
+
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 25px
+    rgba(12, 48, 71, 0.20);
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+.dashboard-error {
+  margin-bottom: 20px;
+
+  padding: 14px 16px;
+
+  border:
+    1px solid #efc7c7;
+
+  border-radius: 9px;
+
+  background: #fff0f0;
+
+  color: #a43d3d;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+/* =====================================================
+   HERO
+===================================================== */
+
+.dashboard-hero {
+  min-height: 285px;
+
+  padding: 42px 50px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  overflow: hidden;
+
+  border-radius: 19px;
+
+  background:
+    linear-gradient(
+      120deg,
+      #0a3047,
+      #185978
+    );
+
+  box-shadow:
+    0 16px 35px
+    rgba(12, 48, 71, 0.12);
+}
+
+.dashboard-hero-content {
+  max-width: 620px;
+}
+
+.dashboard-hero-content > span {
+  color: #e7bd77;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 3px;
+}
+
+.dashboard-hero-content h2 {
+  margin: 14px 0;
+
+  color: white;
+
+  font-family: Georgia, serif;
+  font-size: 38px;
+
+  line-height: 1.08;
+}
+
+.dashboard-hero-content p {
+  max-width: 530px;
+
+  margin-bottom: 24px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.76
+    );
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dashboard-hero-content button {
+  height: 45px;
+
+  padding: 0 18px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #e4ba70;
+
+  color: #103449;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* ICONO HERO */
+
+.dashboard-hero-icon {
+  width: 270px;
+
+  display: flex;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+.hero-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+}
+
+.hero-circle-1 {
+  width: 190px;
+  height: 190px;
+
+  border:
+    1px solid
+    rgba(223, 181, 111, 0.18);
+}
+
+.hero-circle-2 {
+  width: 135px;
+  height: 135px;
+
+  border:
+    1px solid
+    rgba(223, 181, 111, 0.25);
+}
+
+.hero-circle-3 {
+  width: 87px;
+  height: 87px;
+
+  color: #dfb56f;
+
+  background:
+    rgba(255,255,255,0.03);
+
+  border:
+    1px solid
+    rgba(223, 181, 111, 0.32);
+}
+
+
+/* =====================================================
+   ESTADÍSTICAS
+===================================================== */
+
+.dashboard-stats {
+  margin: 27px 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 18px;
+}
+
+.dashboard-stat-card {
+  min-height: 105px;
+
+  padding: 19px 21px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  gap: 17px;
+
+  border:
+    1px solid #e9e3da;
+
+  border-radius: 14px;
+
+  background: white;
+
+  box-shadow:
+    0 8px 25px
+    rgba(20, 47, 62, 0.05);
+}
+
+.dashboard-stat-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 11px;
+}
+
+.dashboard-stat-icon.reservas {
+  color: #26718d;
+  background: #e6f1f5;
+}
+
+.dashboard-stat-icon.espacios {
+  color: #9b6d28;
+  background: #fff1d9;
+}
+
+.dashboard-stat-icon.perfiles {
+  color: #32765e;
+  background: #e6f2ec;
+}
+
+.dashboard-stat-icon.pagos {
+  color: #75568c;
+  background: #f0e8f4;
+}
+
+.dashboard-stat-content span {
+  display: block;
+
+  color: #777f85;
+
+  font-size: 11px;
+}
+
+.dashboard-stat-content strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #092f47;
+
+  font-family: Georgia, serif;
+  font-size: 27px;
+}
+
+.dashboard-stat-content small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #9a9fa2;
+
+  font-size: 10px;
+}
+
+.dashboard-money {
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   PARTE INFERIOR
+===================================================== */
+
+.dashboard-bottom-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.8fr)
+    minmax(300px, 0.8fr);
+
+  gap: 20px;
+}
+
+.dashboard-box {
+  overflow: hidden;
+
+  border:
+    1px solid #e8e2da;
+
+  border-radius: 15px;
+
+  background: white;
+
+  box-shadow:
+    0 8px 25px
+    rgba(20, 47, 62, 0.05);
+}
+
+.dashboard-box-header {
+  padding: 20px 23px 17px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom:
+    1px solid #eee9e2;
+}
+
+.dashboard-box-header h3 {
+  margin: 0;
+
+  color: #12384f;
+
+  font-family: Georgia, serif;
+  font-size: 20px;
+}
+
+.dashboard-box-header p {
+  margin: 3px 0 0;
+
+  color: #969ba0;
+
+  font-size: 10px;
+}
+
+.dashboard-box-header button {
+  border: none;
+  background: none;
+
+  color: #a8752e;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   RESERVAS PRÓXIMAS
+===================================================== */
+
+.dashboard-reservas-list {
+  min-height: 230px;
+}
+
+.dashboard-reserva {
+  min-height: 66px;
+
+  padding: 13px 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(130px, 1fr)
+    minmax(120px, 1fr)
+    minmax(170px, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 13px;
+
+  border-bottom:
+    1px solid #f0ece7;
+}
+
+.dashboard-reserva:last-child {
+  border-bottom: none;
+}
+
+.dashboard-reserva-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  color: #29718d;
+  background: #e7f1f5;
+}
+
+.dashboard-reserva-info strong {
+  display: block;
+
+  color: #15384c;
+
+  font-size: 12px;
+}
+
+.dashboard-reserva-info span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #90969a;
+
+  font-size: 10px;
+}
+
+.dashboard-reserva-persona,
+.dashboard-reserva-fecha {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #6d757b;
+
+  font-size: 10px;
+}
+
+.dashboard-reserva-persona svg,
+.dashboard-reserva-fecha svg {
+  color: #b48645;
+}
+
+.dashboard-status {
+  display: inline-flex;
+
+  padding: 6px 10px;
+
+  border-radius: 20px;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.dashboard-status.pendiente {
+  color: #87631f;
+  background: #fff0d0;
+}
+
+.dashboard-status.aprobada {
+  color: #2e7259;
+  background: #e3f2eb;
+}
+
+.dashboard-status.finalizada {
+  color: #456a80;
+  background: #e6eff4;
+}
+
+.dashboard-status.cancelada {
+  color: #954949;
+  background: #f8e5e5;
+}
+
+
+/* VACÍO */
+
+.dashboard-empty {
+  min-height: 225px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #a88a5d;
+}
+
+.dashboard-empty strong {
+  margin-top: 9px;
+
+  color: #57636b;
+
+  font-size: 12px;
+}
+
+.dashboard-empty span {
+  margin-top: 5px;
+
+  color: #999ea2;
+
+  font-size: 10px;
+}
+
+
+/* =====================================================
+   ACCESOS RÁPIDOS
+===================================================== */
+
+.dashboard-shortcuts >
+button {
+  width: calc(100% - 32px);
+  min-height: 67px;
+
+  margin: 0 16px;
+
+  padding: 12px 14px;
+
+  display: grid;
+
+  grid-template-columns:
+    auto
+    1fr
+    auto;
+
+  align-items: center;
+
+  gap: 11px;
+
+  border: none;
+  border-bottom:
+    1px solid #eee9e2;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.dashboard-shortcuts >
+button:last-child {
+  border-bottom: none;
+}
+
+.dashboard-shortcuts >
+button:hover {
+  background: #fbfaf7;
+}
+
+.shortcut-icon {
+  width: 39px;
+  height: 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  color: #a47736;
+
+  background: #f9f0e2;
+}
+
+.dashboard-shortcuts button strong {
+  display: block;
+
+  color: #193a4d;
+
+  font-size: 11px;
+}
+
+.dashboard-shortcuts button span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #959a9e;
+
+  font-size: 9px;
+}
+
+.dashboard-shortcuts button >
+svg {
+  color: #9b8057;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1200px) {
+
+  .dashboard-stats {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+
+@media (max-width: 800px) {
+
+  .dashboard-top {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 16px;
+  }
+
+  .dashboard-hero {
+    padding: 35px 28px;
+  }
+
+  .dashboard-hero-icon {
+    display: none;
+  }
+
+  .dashboard-stats {
+    grid-template-columns:
+      1fr;
+  }
+
+  .dashboard-reserva {
+    grid-template-columns:
+      auto 1fr;
+  }
+
+  .dashboard-reserva-persona,
+  .dashboard-reserva-fecha,
+  .dashboard-status {
+    grid-column: 2;
+  }
+}

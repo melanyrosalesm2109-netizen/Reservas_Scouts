@@ -1,0 +1,57 @@
+:root {
+  font-family: Inter, Arial, Helvetica, sans-serif;
+
+  --navy: #13293d;
+  --navy-dark: #0c1e2d;
+  --navy-light: #1d3f5a;
+
+  --gold: #c69c5b;
+  --gold-light: #dfbd85;
+
+  --cream: #f7f4ef;
+  --cream-dark: #eee8df;
+
+  --white: #ffffff;
+
+  --text: #1d2939;
+  --text-soft: #667085;
+
+  --border: #e4ded5;
+
+  --success: #2f855a;
+  --danger: #c24141;
+
+  --shadow:
+    0 12px 35px rgba(19, 41, 61, 0.09);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--text);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  transition: 0.2s ease;
+}

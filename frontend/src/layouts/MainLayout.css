@@ -1,0 +1,303 @@
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f3ee;
+}
+
+/* ======================
+   SIDEBAR
+====================== */
+
+.sidebar {
+  width: 270px;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  padding: 30px 22px 24px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  background:
+    linear-gradient(
+      180deg,
+      #091c2b 0%,
+      #102f45 55%,
+      #173d56 100%
+    );
+
+  color: white;
+
+  box-shadow:
+    10px 0 35px rgba(7, 27, 40, 0.12);
+
+  z-index: 100;
+}
+
+/* MARCA */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  margin-bottom: 40px;
+}
+
+.brand-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #102f45;
+  background: #d4ad68;
+
+  border-radius: 13px;
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.brand h2 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  margin: 0;
+  line-height: 1;
+}
+
+.brand span {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 10px;
+  letter-spacing: 4px;
+
+  color: #d4ad68;
+}
+
+.menu-label {
+  margin: 0 11px 13px;
+
+  font-size: 10px;
+  letter-spacing: 1.5px;
+
+  color:
+    rgba(255, 255, 255, 0.42);
+}
+
+/* LINKS */
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sidebar-menu a {
+  min-height: 49px;
+
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  border-radius: 10px;
+
+  text-decoration: none;
+
+  color:
+    rgba(255, 255, 255, 0.74);
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition: 0.2s ease;
+
+  position: relative;
+}
+
+.sidebar-menu a:hover {
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  color: white;
+
+  transform:
+    translateX(3px);
+}
+
+.sidebar-menu a.active {
+  color: white;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(212, 173, 104, 0.23),
+      rgba(212, 173, 104, 0.08)
+    );
+
+  box-shadow:
+    inset 3px 0 0 #d4ad68;
+}
+
+.sidebar-menu a.active svg {
+  color: #e1bd7f;
+}
+
+/* PARTE INFERIOR */
+
+.sidebar-bottom {
+  border-top:
+    1px solid rgba(255, 255, 255, 0.1);
+
+  padding-top: 20px;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  margin-bottom: 15px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #d4ad68;
+
+  color: #0b2233;
+
+  font-weight: bold;
+}
+
+.user-card strong {
+  display: block;
+  font-size: 13px;
+}
+
+.user-card span {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 11px;
+
+  color:
+    rgba(255, 255, 255, 0.5);
+}
+
+.logout-button {
+  width: 100%;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.13);
+
+  border-radius: 9px;
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #9c4141;
+  border-color: #9c4141;
+  color: white;
+}
+
+/* ======================
+   CONTENIDO
+====================== */
+
+.main-content {
+  margin-left: 270px;
+
+  width:
+    calc(100% - 270px);
+
+  min-height: 100vh;
+
+  padding: 38px 42px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(212, 173, 104, 0.1),
+      transparent 28%
+    ),
+    #f5f3ee;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .main-content {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+    padding: 25px;
+  }
+
+  .brand h2 {
+    font-size: 18px;
+  }
+}
+
+
+.user-info-session {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info-session strong {
+  color: white;
+
+  font-size: 13px;
+}
+
+.user-info-session span {
+  display: block;
+
+  max-width: 170px;
+
+  margin-top: 2px;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+  color: rgba(255, 255, 255, 0.62);
+
+  font-size: 10px;
+}
