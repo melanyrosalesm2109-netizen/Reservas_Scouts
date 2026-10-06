@@ -3,13 +3,7 @@ const API_URL =
 
 async function procesarRespuesta(response) {
 
-  let data = null;
-
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
     throw new Error(

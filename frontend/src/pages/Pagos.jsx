@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   WalletCards,
@@ -77,11 +77,7 @@ function Pagos() {
   const [error, setError] =
     useState("");
 
-  useEffect(() => {
-    cargarInicial();
-  }, []);
-
-  const cargarInicial = async () => {
+  const cargarInicial = useCallback(async () => {
 
     try {
 
@@ -108,7 +104,13 @@ function Pagos() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
+  }, [cargarInicial]);
 
   const handleFiltroChange = (
     event

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   CalendarDays,
@@ -98,11 +98,7 @@ function Reservas() {
   // CARGAR DATOS AL INICIAR
   // =====================================================
 
-  useEffect(() => {
-    cargarInicial();
-  }, []);
-
-  const cargarInicial = async () => {
+  const cargarInicial = useCallback(async () => {
 
     try {
 
@@ -133,7 +129,13 @@ function Reservas() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
+  }, [cargarInicial]);
 
   // =====================================================
   // FILTRAR RESERVAS

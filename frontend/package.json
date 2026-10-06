@@ -15,6 +15,10 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"
   },
+  "overrides": {
+    "brace-expansion": "5.0.12",
+    "source-map-js": "1.2.2"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.18",

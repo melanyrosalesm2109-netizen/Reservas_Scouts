@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Building2,
   Plus,
@@ -55,16 +55,9 @@ function Espacios() {
   const [cargando, setCargando] = useState(true);
 
   // =====================================================
-  // CARGAR ESPACIOS AL ABRIR LA PÁGINA
-  // =====================================================
-  useEffect(() => {
-    cargarTodosLosEspacios();
-  }, []);
-
-  // =====================================================
   // CARGAR TODOS
   // =====================================================
-  const cargarTodosLosEspacios = async () => {
+  const cargarTodosLosEspacios = useCallback(async () => {
     try {
       setCargando(true);
       setError("");
@@ -78,7 +71,16 @@ function Espacios() {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
+
+  // =====================================================
+  // CARGAR ESPACIOS AL ABRIR LA PÁGINA
+  // =====================================================
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarTodosLosEspacios();
+    });
+  }, [cargarTodosLosEspacios]);
 
   // =====================================================
   // CARGAR USANDO FILTROS DEL BACKEND

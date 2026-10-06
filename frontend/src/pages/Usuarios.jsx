@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   Plus,
@@ -80,12 +80,7 @@ function Usuarios() {
   // CARGAR DATOS
   // =====================================================
 
-  useEffect(() => {
-    cargarInicial();
-  }, []);
-
-
-  const cargarInicial = async () => {
+  const cargarInicial = useCallback(async () => {
 
     try {
 
@@ -122,7 +117,13 @@ function Usuarios() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
+  }, [cargarInicial]);
 
 
   // =====================================================

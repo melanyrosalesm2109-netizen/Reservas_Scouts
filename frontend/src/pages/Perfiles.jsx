@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   UsersRound,
@@ -69,11 +69,7 @@ function Perfiles() {
   const [error, setError] =
     useState("");
 
-  useEffect(() => {
-    cargarTodos();
-  }, []);
-
-  const cargarTodos = async () => {
+  const cargarTodos = useCallback(async () => {
 
     try {
       setCargando(true);
@@ -93,7 +89,13 @@ function Perfiles() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarTodos();
+    });
+  }, [cargarTodos]);
 
   const handleFiltroChange = (
     event
