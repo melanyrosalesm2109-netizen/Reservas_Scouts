@@ -507,7 +507,7 @@ public class UsuarioRepository {
                                         ),
 
                                         rs.getString(
-                                                "password_hash"
+                                                "passwordHash"
                                         ),
 
                                         rs.getString(
@@ -515,7 +515,7 @@ public class UsuarioRepository {
                                         ),
 
                                         rs.getInt(
-                                                "rol_id"
+                                                "rolId"
                                         ),
 
                                         rs.getString(
