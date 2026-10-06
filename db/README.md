@@ -6,8 +6,14 @@ y procedimientos almacenados que utiliza el backend.
 ## Requisitos y ejecución
 
 - Microsoft SQL Server 2025 (compatibilidad 170).
+- Habilitar TCP/IP en la instancia de SQL Server y configurar el puerto `1433`;
+  reiniciar el servicio de SQL Server después del cambio.
+- Habilitar el modo de autenticación de SQL Server y Windows (modo mixto).
 - Crear previamente en la instancia un login de autenticación SQL llamado
-  `reservas_app` y configurar su contraseña en `backend/src/main/resources/application.properties`.
+  `reservas_app` y definir su contraseña en la variable de entorno de usuario
+  `RESERVASSCOUTS_DB_PASSWORD`. El backend lee esa variable desde
+  `backend/src/main/resources/application.properties`; no guardar contraseñas
+  en el repositorio.
 - Ejecutar el script una sola vez como instalación inicial, en SQL Server
   Management Studio conectado a la instancia con permisos para crear bases de
   datos y usuarios. No volver a ejecutarlo sobre una base existente: no es un
