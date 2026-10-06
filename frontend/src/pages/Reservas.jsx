@@ -27,8 +27,9 @@ import {
 } from "../services/espacioService";
 
 import {
-  listarPerfiles
+  listarPerfilesParaReserva
 } from "../services/perfilService";
+import { useAuth } from "../context/useAuth";
 
 import "./Reservas.css";
 
@@ -60,6 +61,9 @@ const filtrosVacios = {
 };
 
 function Reservas() {
+
+  const { usuario } = useAuth();
+  const esAdministrador = usuario?.rol === "Administrador";
 
   const [reservas, setReservas] =
     useState([]);
@@ -112,7 +116,7 @@ function Reservas() {
       ] = await Promise.all([
         listarReservas(),
         listarEspacios(),
-        listarPerfiles()
+        listarPerfilesParaReserva()
       ]);
 
       setReservas(reservasData);
@@ -1115,31 +1119,28 @@ function Reservas() {
 
                         <div className="table-actions">
 
-                          <button
-                            type="button"
-                            className="edit-button"
-                            onClick={() =>
-                              abrirEditar(
-                                reserva
-                              )
-                            }
-                            title="Editar reserva"
-                          >
-                            <Pencil size={16} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="delete-button"
-                            onClick={() =>
-                              borrarReserva(
-                                reserva
-                              )
-                            }
-                            title="Eliminar reserva"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {esAdministrador ? (
+                            <>
+                              <button
+                                type="button"
+                                className="edit-button"
+                                onClick={() => abrirEditar(reserva)}
+                                title="Editar reserva"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-button"
+                                onClick={() => borrarReserva(reserva)}
+                                title="Eliminar reserva"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <span>Solo lectura</span>
+                          )}
 
                         </div>
 

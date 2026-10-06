@@ -6,6 +6,7 @@ import com.reservasscouts.backend.model.ReservaResumen;
 import com.reservasscouts.backend.service.ReservaService;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reservas")
-@CrossOrigin(origins = "http://localhost:5173")
 public class ReservaController {
 
     private final ReservaService service;
@@ -78,11 +78,12 @@ public class ReservaController {
     @ResponseStatus(HttpStatus.CREATED)
     public Reserva insertar(
             @Valid
-            @RequestBody ReservaRequest request
+            @RequestBody ReservaRequest request,
+            HttpSession session
     ) {
 
         return service.insertar(
-                request
+                request.conCreador((Integer) session.getAttribute("usuarioId"))
         );
     }
 

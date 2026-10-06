@@ -485,7 +485,7 @@ public class PerfilRepository {
 
         Integer usuarioId =
                 rs.getInt(
-                        "usuario_id"
+                        "usuarioId"
                 );
 
         if (rs.wasNull()) {
@@ -494,17 +494,17 @@ public class PerfilRepository {
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         Timestamp updated =
                 rs.getTimestamp(
-                        "updated_at"
+                        "updatedAt"
                 );
 
         return new Perfil(
                 rs.getInt(
-                        "id_perfil"
+                        "idPerfil"
                 ),
 
                 usuarioId,
@@ -522,11 +522,11 @@ public class PerfilRepository {
                 ),
 
                 rs.getString(
-                        "correo_contacto"
+                        "correoContacto"
                 ),
 
                 rs.getString(
-                        "tipo_perfil"
+                        "tipoPerfil"
                 ),
 
                 rs.getString(

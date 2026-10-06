@@ -627,12 +627,12 @@ public class UsuarioRepository {
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         Timestamp updated =
                 rs.getTimestamp(
-                        "updated_at"
+                        "updatedAt"
                 );
 
         return new Usuario(
@@ -642,7 +642,7 @@ public class UsuarioRepository {
                 ),
 
                 rs.getInt(
-                        "rol_id"
+                        "rolId"
                 ),
 
                 rs.getString(
@@ -677,7 +677,7 @@ public class UsuarioRepository {
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         return new Rol(

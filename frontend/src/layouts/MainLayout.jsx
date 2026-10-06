@@ -14,17 +14,18 @@ import {
   UsersRound,
   CreditCard,
   ShieldCheck,
+  Activity,
+  HardDrive,
   LogOut,
   TentTree
 
 } from "lucide-react";
 
 import {
-
-  obtenerSesion,
   cerrarSesion as eliminarSesion
-
 } from "../services/authService";
+import { useAuth } from "../context/useAuth";
+import { useState } from "react";
 
 import "./MainLayout.css";
 
@@ -33,24 +34,23 @@ function MainLayout() {
   const navigate =
     useNavigate();
 
-  const usuario =
-    obtenerSesion();
+  const { usuario, setUsuario } = useAuth();
+  const [errorCerrarSesion, setErrorCerrarSesion] = useState("");
 
 
   // =====================================================
   // CERRAR SESIÓN
   // =====================================================
 
-  const cerrarSesion = () => {
-
-    eliminarSesion();
-
-    navigate(
-      "/login",
-      {
-        replace: true
-      }
-    );
+  const cerrarSesion = async () => {
+    setErrorCerrarSesion("");
+    try {
+      await eliminarSesion();
+      setUsuario(null);
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setErrorCerrarSesion(err.message || "No se pudo cerrar la sesión.");
+    }
   };
 
 
@@ -116,9 +116,8 @@ function MainLayout() {
 
           <nav className="sidebar-menu">
 
-            <NavLink
-              to="/dashboard"
-            >
+            {usuario?.rol === "Administrador" && (
+            <NavLink to="/dashboard">
 
               <LayoutDashboard
                 size={19}
@@ -129,6 +128,7 @@ function MainLayout() {
               </span>
 
             </NavLink>
+            )}
 
 
             <NavLink
@@ -146,9 +146,8 @@ function MainLayout() {
             </NavLink>
 
 
-            <NavLink
-              to="/espacios"
-            >
+            {usuario?.rol === "Administrador" && (
+            <NavLink to="/espacios">
 
               <Building2
                 size={19}
@@ -159,11 +158,11 @@ function MainLayout() {
               </span>
 
             </NavLink>
+            )}
 
 
-            <NavLink
-              to="/perfiles"
-            >
+            {usuario?.rol === "Administrador" && (
+            <NavLink to="/perfiles">
 
               <UsersRound
                 size={19}
@@ -174,11 +173,11 @@ function MainLayout() {
               </span>
 
             </NavLink>
+            )}
 
 
-            <NavLink
-              to="/pagos"
-            >
+            {usuario?.rol === "Administrador" && (
+            <NavLink to="/pagos">
 
               <CreditCard
                 size={19}
@@ -189,6 +188,7 @@ function MainLayout() {
               </span>
 
             </NavLink>
+            )}
 
 
             {/* Solo mostramos Usuarios
@@ -211,6 +211,20 @@ function MainLayout() {
 
               </NavLink>
 
+            )}
+
+            {usuario?.rol === "Administrador" && (
+              <NavLink to="/auditoria">
+                <Activity size={19} />
+                <span>Auditoría</span>
+              </NavLink>
+            )}
+
+            {usuario?.rol === "Administrador" && (
+              <NavLink to="/respaldos">
+                <HardDrive size={19} />
+                <span>Respaldos</span>
+              </NavLink>
             )}
 
           </nav>
@@ -264,9 +278,7 @@ function MainLayout() {
 
             className="logout-button"
 
-            onClick={
-              cerrarSesion
-            }
+            onClick={() => { void cerrarSesion(); }}
 
           >
 
@@ -277,6 +289,9 @@ function MainLayout() {
             Cerrar sesión
 
           </button>
+          {errorCerrarSesion && (
+            <p role="alert">{errorCerrarSesion}</p>
+          )}
 
         </div>
 

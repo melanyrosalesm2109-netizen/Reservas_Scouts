@@ -7,7 +7,6 @@ import com.reservasscouts.backend.service.EspacioService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +24,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/espacios")
-@CrossOrigin(origins = "http://localhost:5173")
 public class EspacioController {
 
     private final EspacioService service;

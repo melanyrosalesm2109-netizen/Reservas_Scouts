@@ -1,9 +1,27 @@
 USE [master] 
 GO
 /****** Objeto: Database [reservasScouts] Fecha de script: 24/09/2026 09:13:57 a. m. ******/
+:setvar DataFilePath "C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\reservasScouts.mdf"
+:setvar LogFilePath "C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\reservasScouts_log.ldf"
 CREATE DATABASE [reservasScouts]
  CONTAINMENT = NONE
- WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+ ON PRIMARY
+(
+    NAME = N'reservasScouts',
+    FILENAME = N'$(DataFilePath)',
+    SIZE = 64MB,
+    MAXSIZE = 2048MB,
+    FILEGROWTH = 64MB
+)
+LOG ON
+(
+    NAME = N'reservasScouts_log',
+    FILENAME = N'$(LogFilePath)',
+    SIZE = 32MB,
+    MAXSIZE = 1024MB,
+    FILEGROWTH = 32MB
+)
+    WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
 GO
 ALTER DATABASE [reservasScouts] SET COMPATIBILITY_LEVEL = 170
 GO
@@ -56,7 +74,7 @@ ALTER DATABASE [reservasScouts] SET READ_COMMITTED_SNAPSHOT OFF
 GO
 ALTER DATABASE [reservasScouts] SET HONOR_BROKER_PRIORITY OFF 
 GO
-ALTER DATABASE [reservasScouts] SET RECOVERY FULL 
+ALTER DATABASE [reservasScouts] SET RECOVERY SIMPLE
 GO
 ALTER DATABASE [reservasScouts] SET  MULTI_USER 
 GO
@@ -388,6 +406,69 @@ CREATE TABLE [dbo].[auditoriaReservas](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
+/****** Objeto: Table [dbo].[auditoriaAccesos] ******/
+CREATE TABLE [dbo].[auditoriaAccesos](
+    [idAuditoriaAcceso] [bigint] IDENTITY(1,1) NOT NULL,
+    [usuarioId] [int] NULL,
+    [evento] [nvarchar](20) NOT NULL,
+    [direccionIp] [varchar](45) NULL,
+    [agenteUsuario] [nvarchar](300) NULL,
+    [creadoEn] [datetime2](0) NOT NULL,
+    CONSTRAINT [pkAuditoriaAccesos] PRIMARY KEY CLUSTERED ([idAuditoriaAcceso] ASC),
+    CONSTRAINT [ckAuditoriaAccesosEvento] CHECK ([evento] IN (N'LOGIN', N'LOGIN_FALLIDO', N'LOGOUT', N'BACKUP', N'RESTORE'))
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [ixAuditoriaAccesosUsuarioFecha]
+    ON [dbo].[auditoriaAccesos] ([usuarioId], [creadoEn] DESC)
+GO
+    CREATE TABLE [dbo].[respaldoHistorial](
+        [idRespaldo] [bigint] IDENTITY(1,1) NOT NULL,
+        [nombreArchivo] [nvarchar](120) NOT NULL,
+        [creadoPorUsuarioId] [int] NULL,
+        [creadoEn] [datetime2](0) NOT NULL,
+        [bytes] [bigint] NOT NULL,
+        CONSTRAINT [pkRespaldoHistorial] PRIMARY KEY CLUSTERED ([idRespaldo] ASC),
+        CONSTRAINT [uqRespaldoHistorialNombre] UNIQUE ([nombreArchivo]),
+        CONSTRAINT [ckRespaldoHistorialBytes] CHECK ([bytes] >= 0),
+        CONSTRAINT [fkRespaldoHistorialUsuario] FOREIGN KEY ([creadoPorUsuarioId])
+            REFERENCES [dbo].[usuarios] ([id]) ON DELETE SET NULL
+    ) ON [PRIMARY]
+    GO
+    CREATE NONCLUSTERED INDEX [ixRespaldoHistorialFecha]
+        ON [dbo].[respaldoHistorial] ([creadoEn] DESC)
+    GO
+    CREATE VIEW [dbo].[vAuditoriaResumen]
+    AS
+        SELECT
+            tabla COLLATE DATABASE_DEFAULT AS origen,
+            accion COLLATE DATABASE_DEFAULT AS evento,
+            COUNT_BIG(*) AS totalEventos,
+            MAX(creadoEn) AS ultimoEvento
+        FROM dbo.auditoriaReservas
+        GROUP BY tabla, accion
+        UNION ALL
+        SELECT
+            N'auditoriaAccesos' AS origen,
+            evento COLLATE DATABASE_DEFAULT,
+            COUNT_BIG(*),
+            MAX(creadoEn)
+        FROM dbo.auditoriaAccesos
+        GROUP BY evento;
+    GO
+    IF DATABASE_PRINCIPAL_ID(N'reservas_consulta') IS NULL
+        CREATE USER [reservas_consulta] WITHOUT LOGIN;
+    GO
+    GRANT SELECT ON OBJECT::dbo.vReservasResumen TO [reservas_consulta];
+    GRANT SELECT ON OBJECT::dbo.vPerfilesConfidencial TO [reservas_consulta];
+    GO
+    IF SUSER_ID(N'reservas_maintenance') IS NOT NULL
+    BEGIN
+        IF DATABASE_PRINCIPAL_ID(N'reservas_maintenance') IS NULL
+            CREATE USER [reservas_maintenance] FOR LOGIN [reservas_maintenance];
+        IF IS_ROLEMEMBER(N'db_backupoperator', N'reservas_maintenance') <> 1
+            ALTER ROLE [db_backupoperator] ADD MEMBER [reservas_maintenance];
+    END;
+    GO
 /****** Objeto: Table [dbo].[pagos] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
 SET ANSI_NULLS ON
 GO
@@ -464,6 +545,13 @@ CREATE TABLE [dbo].[roles](
 	[nombre] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
+GO
+IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Administrador')
+    INSERT INTO dbo.roles (nombre, descripcion, createdAt)
+    VALUES (N'Administrador', N'Acceso completo y administración del sistema.', SYSDATETIME());
+IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Usuario')
+    INSERT INTO dbo.roles (nombre, descripcion, createdAt)
+    VALUES (N'Usuario', N'Puede consultar y crear reservas.', SYSDATETIME());
 GO
 /****** Objeto: Index [ixActividadUsuario] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
 CREATE NONCLUSTERED INDEX [ixActividadUsuario] ON [dbo].[actividad]
@@ -3750,6 +3838,75 @@ BEGIN
         DB_NAME() AS baseDatos,
         COUNT(*) AS cantidadEspacios
     FROM dbo.espacios;
+END;
+GO
+/****** Procedimiento: registrar eventos de autenticación ******/
+CREATE PROCEDURE [dbo].[paAuditoriaAccesoRegistrar]
+    @pUsuarioId INT = NULL,
+    @pEvento NVARCHAR(20),
+    @pDireccionIp VARCHAR(45) = NULL,
+    @pAgenteUsuario NVARCHAR(300) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO dbo.auditoriaAccesos
+        (usuarioId, evento, direccionIp, agenteUsuario, creadoEn)
+    VALUES
+        (@pUsuarioId, @pEvento, @pDireccionIp, @pAgenteUsuario, SYSDATETIME());
+END;
+GO
+/****** Procedimiento: resumen de auditoría ******/
+CREATE PROCEDURE [dbo].[paAuditoriaResumen]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT origen, evento, totalEventos, ultimoEvento
+    FROM dbo.vAuditoriaResumen
+    ORDER BY ultimoEvento DESC, origen, evento;
+END;
+GO
+/****** Procedimientos: catálogo de respaldos creados por la aplicación ******/
+CREATE PROCEDURE [dbo].[paRespaldoListar]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT nombreArchivo AS nombre, creadoEn, bytes
+    FROM dbo.respaldoHistorial
+    ORDER BY creadoEn DESC, idRespaldo DESC;
+END;
+GO
+CREATE PROCEDURE [dbo].[paRespaldoRegistrar]
+    @pNombreArchivo NVARCHAR(120),
+    @pUsuarioId INT = NULL,
+    @pCreadoEn DATETIME2(0),
+    @pBytes BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF @pNombreArchivo NOT LIKE N'reservasScouts[_]%.bak'
+       OR @pBytes < 0
+       OR @pCreadoEn IS NULL
+        THROW 50031, N'Metadatos de respaldo no válidos.', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.respaldoHistorial WHERE nombreArchivo = @pNombreArchivo)
+        UPDATE dbo.respaldoHistorial
+        SET creadoPorUsuarioId = @pUsuarioId, creadoEn = @pCreadoEn, bytes = @pBytes
+        WHERE nombreArchivo = @pNombreArchivo;
+    ELSE
+        INSERT dbo.respaldoHistorial (nombreArchivo, creadoPorUsuarioId, creadoEn, bytes)
+        VALUES (@pNombreArchivo, @pUsuarioId, @pCreadoEn, @pBytes);
+END;
+GO
+/****** Procedimiento: opciones mínimas de perfil para crear reservas ******/
+CREATE PROCEDURE [dbo].[paPerfilOpcionesReserva]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT idPerfil, nombre, tipoPerfil
+    FROM dbo.perfilesUsuario
+    ORDER BY nombre;
 END;
 GO
 /****** Trigger: auditoría de cambios en espacios ******/

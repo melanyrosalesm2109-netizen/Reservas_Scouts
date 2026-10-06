@@ -2,12 +2,12 @@ package com.reservasscouts.backend.controller;
 
 import com.reservasscouts.backend.dto.PerfilRequest;
 import com.reservasscouts.backend.model.Perfil;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.reservasscouts.backend.service.PerfilService;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,13 +24,26 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/perfiles")
-@CrossOrigin(origins = "http://localhost:5173")
 public class PerfilController {
 
     private final PerfilService service;
+    private final JdbcTemplate jdbcTemplate;
 
-    public PerfilController(PerfilService service) {
+    public PerfilController(PerfilService service, JdbcTemplate jdbcTemplate) {
         this.service = service;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @GetMapping("/opciones-reserva")
+    public List<PerfilOpcionReserva> listarOpcionesReserva() {
+        return jdbcTemplate.query(
+                "EXEC dbo.paPerfilOpcionesReserva",
+                (rs, rowNum) -> new PerfilOpcionReserva(
+                        rs.getInt("idPerfil"),
+                        rs.getString("nombre"),
+                        rs.getString("tipoPerfil")
+                )
+        );
     }
 
     @GetMapping

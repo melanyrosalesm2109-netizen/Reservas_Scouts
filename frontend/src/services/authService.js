@@ -1,75 +1,48 @@
-const API_URL =
-  "http://localhost:8080/api/usuarios/login";
+import { apiFetch } from "./api";
 
-export async function iniciarSesion(
-  email,
-  password
-) {
+const API_URL = "http://localhost:8080/api/usuarios";
 
-  const response =
-    await fetch(
-      API_URL,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body:
-          JSON.stringify({
-            email,
-            password
-          })
-      }
-    );
-
+async function mensajeError(response) {
   const data = await response.json().catch(() => null);
+  return data?.mensaje || data?.message || data?.detail;
+}
+
+export async function iniciarSesion(email, password) {
+  const response = await apiFetch(`${API_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
 
   if (!response.ok) {
-
     throw new Error(
-      data?.mensaje ||
-      data?.message ||
-      "Correo o contraseña incorrectos."
+      await mensajeError(response) || "Correo o contraseña incorrectos."
     );
   }
 
-  return data;
+  return response.json();
 }
 
-export function guardarSesion(
-  usuario
-) {
-
-  localStorage.setItem(
-    "usuario",
-    JSON.stringify(usuario)
-  );
-}
-
-export function obtenerSesion() {
-
-  const datos =
-    localStorage.getItem(
-      "usuario"
+export async function obtenerSesion() {
+  const response = await apiFetch(`${API_URL}/sesion`);
+  if (response.status === 401) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(
+      await mensajeError(response) || "No se pudo verificar la sesión."
     );
-
-  if (!datos) {
-    return null;
   }
-
-  try {
-    return JSON.parse(datos);
-  } catch {
-    return null;
-  }
+  return response.json();
 }
 
-export function cerrarSesion() {
-
-  localStorage.removeItem(
-    "usuario"
-  );
+export async function cerrarSesion() {
+  const response = await apiFetch(`${API_URL}/logout`, {
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(
+      await mensajeError(response) || "No se pudo cerrar la sesión."
+    );
+  }
 }

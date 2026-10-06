@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 
 import {
-  iniciarSesion,
-  guardarSesion
+  iniciarSesion
 } from "../services/authService";
+import { useAuth } from "../context/useAuth";
 
 import "./Login.css";
 
@@ -20,6 +20,7 @@ function Login() {
 
   const navigate =
     useNavigate();
+  const { setUsuario } = useAuth();
 
   const [email, setEmail] =
     useState("");
@@ -73,12 +74,11 @@ function Login() {
           password
         );
 
-      guardarSesion(
-        usuario
-      );
+      setUsuario(usuario);
 
       navigate(
-        "/dashboard"
+        usuario.rol === "Administrador" ? "/dashboard" : "/reservas",
+        { replace: true }
       );
 
     } catch (err) {

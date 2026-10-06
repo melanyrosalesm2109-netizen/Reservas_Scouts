@@ -497,12 +497,12 @@ public class EspacioRepository {
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         Timestamp updated =
                 rs.getTimestamp(
-                        "updated_at"
+                        "updatedAt"
                 );
 
         return new Espacio(
