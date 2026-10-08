@@ -43,7 +43,8 @@ public class ReservaRepository {
             Integer espacioId,
             Integer solicitantePerfilId,
             LocalDate fechaDesde,
-            LocalDate fechaHasta
+            LocalDate fechaHasta,
+            Integer creadoPorUsuarioId
     ) {
 
         return jdbcTemplate.execute(
@@ -51,7 +52,7 @@ public class ReservaRepository {
 
                     String sql =
                             "{call dbo.paReservaFiltrar(" +
-                            "?,?,?,?,?,?,?,?,?)}";
+                            "?,?,?,?,?,?,?,?,?,?)}";
 
                     try (CallableStatement statement =
                                  connection.prepareCall(sql)) {
@@ -96,6 +97,12 @@ public class ReservaRepository {
                                 statement,
                                 7,
                                 fechaHasta
+                        );
+
+                        setIntegerOrNull(
+                                statement,
+                                10,
+                                creadoPorUsuarioId
                         );
 
                         // OUTPUT

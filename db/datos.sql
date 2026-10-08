@@ -11,10 +11,6 @@ BEGIN TRY
     DECLARE @hashDemo NVARCHAR(255) =
         N'$2a$10$N9qo8uLOickgx2ZMRZoMye.IjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
-    IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Invitado')
-        INSERT INTO dbo.roles (nombre, descripcion, createdAt)
-        VALUES (N'Invitado', N'Cuenta de demostración para usuarios invitados.', @ahora);
-
     IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Administrador')
         INSERT INTO dbo.roles (nombre, descripcion, createdAt)
         VALUES (N'Administrador', N'Acceso completo y administración del sistema.', @ahora);
@@ -29,7 +25,7 @@ BEGIN TRY
 
     IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Usuario')
         INSERT INTO dbo.roles (nombre, descripcion, createdAt)
-        VALUES (N'Usuario', N'Puede consultar y crear reservas.', @ahora);
+        VALUES (N'Usuario', N'Puede crear reservas y consultar las propias.', @ahora);
 
     DECLARE @cuentas TABLE
     (
@@ -39,7 +35,7 @@ BEGIN TRY
 
     INSERT INTO @cuentas (email, nombreRol)
     VALUES
-        (N'invitado@reservasscouts.test', N'Invitado'),
+        (N'usuario@reservasscouts.test', N'Usuario'),
         (N'admin@reservasscouts.test', N'Administrador'),
         (N'recepcion@reservasscouts.test', N'Recepcionista'),
         (N'miembro@reservasscouts.test', N'Miembro');
@@ -65,10 +61,10 @@ BEGIN TRY
     INSERT INTO @usuarios (email, usuarioId, nombre)
     SELECT c.email, u.id,
         CASE c.nombreRol
-            WHEN N'Invitado' THEN N'Invitado de demostración'
             WHEN N'Administrador' THEN N'Administrador de demostración'
             WHEN N'Recepcionista' THEN N'Recepcionista de demostración'
-            ELSE N'Miembro de demostración'
+            WHEN N'Miembro' THEN N'Miembro de demostración'
+            ELSE N'Usuario de demostración'
         END
     FROM @cuentas AS c
     INNER JOIN dbo.usuarios AS u ON u.email = c.email;
@@ -226,7 +222,7 @@ BEGIN TRY
     INNER JOIN dbo.roles AS r ON r.id = u.rolId
     WHERE u.email IN
     (
-        N'invitado@reservasscouts.test',
+        N'usuario@reservasscouts.test',
         N'admin@reservasscouts.test',
         N'recepcion@reservasscouts.test',
         N'miembro@reservasscouts.test'

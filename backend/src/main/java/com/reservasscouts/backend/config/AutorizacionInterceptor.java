@@ -47,14 +47,38 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        boolean lecturaPermitida = HttpMethod.GET.matches(request.getMethod())
-                && (request.getRequestURI().equals("/api/reservas")
-                || request.getRequestURI().startsWith("/api/espacios")
-                || request.getRequestURI().equals("/api/perfiles/opciones-reserva"));
-        boolean crearReservaPermitida = HttpMethod.POST.matches(request.getMethod())
-                && request.getRequestURI().equals("/api/reservas");
+        String method = request.getMethod();
+        String path = request.getRequestURI();
+        boolean recepcionista = "Recepcionista".equalsIgnoreCase(rol);
+        boolean usuarioRegular = "Miembro".equalsIgnoreCase(rol)
+                || "Usuario".equalsIgnoreCase(rol);
+        boolean metodoCrud = HttpMethod.GET.matches(method)
+                || HttpMethod.POST.matches(method)
+                || HttpMethod.PUT.matches(method)
+                || HttpMethod.DELETE.matches(method);
 
-        if (lecturaPermitida || crearReservaPermitida) {
+        boolean recursoGestionRecepcionista = path.equals("/api/reservas")
+                || path.startsWith("/api/reservas/")
+                || path.equals("/api/pagos")
+                || path.startsWith("/api/pagos/");
+        boolean recursoConsultaRecepcionista = path.equals("/api/espacios")
+                || path.startsWith("/api/espacios/")
+                || path.equals("/api/perfiles")
+                || path.startsWith("/api/perfiles/");
+        boolean accesoRecepcionista = recepcionista
+                && ((metodoCrud && recursoGestionRecepcionista)
+                || (HttpMethod.GET.matches(method) && recursoConsultaRecepcionista));
+
+        boolean accesoRegular = usuarioRegular
+                && (HttpMethod.GET.matches(method)
+                && (path.equals("/api/reservas")
+                || path.equals("/api/espacios")
+                || path.startsWith("/api/espacios/")
+                || path.equals("/api/perfiles/opciones-reserva"))
+                || HttpMethod.POST.matches(method)
+                && path.equals("/api/reservas"));
+
+        if (accesoRecepcionista || accesoRegular) {
             request.setAttribute("usuarioId", usuarioId);
             return true;
         }

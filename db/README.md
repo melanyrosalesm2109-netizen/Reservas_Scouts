@@ -36,9 +36,10 @@ usuario/rol, con una contraseña definida fuera del repositorio.
 
 ## Actualización de una base existente
 
-Antes de aplicar cambios, crear y verificar un respaldo. Ejecutar
-`migrations/001_cumplimiento.sql` sobre `reservasScouts`; es repetible y agrega
-o verifica el rol `Usuario`, la vista `vAuditoriaResumen`, las tablas
+Antes de aplicar cambios, crear y verificar un respaldo. Ejecutar en orden
+`migrations/001_cumplimiento.sql` y `migrations/002_roles_y_permisos.sql` sobre
+`reservasScouts`; ambas son repetibles. La primera agrega o verifica el rol
+`Usuario`, la vista `vAuditoriaResumen`, las tablas
 `auditoriaAccesos` y `respaldoHistorial`, y los procedimientos de auditoría,
 catálogo de respaldos y opciones de perfil. También instala cinco triggers que
 registran cambios de espacios, perfiles, usuarios, reservas y pagos, y elimina
@@ -46,10 +47,12 @@ las membresías heredadas de lectura y escritura amplia del login `reservasApp`.
 Los triggers no guardan credenciales ni datos de contacto; los intentos de
 acceso, cierres de sesión y operaciones de respaldo se registran separadamente.
 
-La cuenta regular puede consultar el resumen de reservas y los datos mínimos
-necesarios para solicitar una reserva. Solo `Administrador` puede consultar
-detalles sensibles, editar o eliminar datos, administrar usuarios y ver
-auditoría/respaldos. El backend guarda la autenticación en una sesión del
+`Administrador` tiene acceso completo. `Recepcionista` puede gestionar
+reservas y pagos y consultar espacios y perfiles. `Miembro` y `Usuario` pueden
+crear reservas y consultar únicamente las que ellos crearon, además de consultar
+espacios y su propio perfil como opción de reserva. Solo `Administrador` puede
+administrar usuarios, modificar espacios/perfiles y ver auditoría/respaldos.
+El backend guarda la autenticación en una sesión del
 servidor con cookie `HttpOnly`, `SameSite=Strict` y 30 minutos de inactividad.
 Para publicar con HTTPS, establecer `SESSION_COOKIE_SECURE=true`.
 

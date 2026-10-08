@@ -20,6 +20,7 @@ import {
   actualizarPerfil,
   eliminarPerfil
 } from "../services/perfilService";
+import { useAuth } from "../context/useAuth";
 
 import "./Perfiles.css";
 
@@ -41,6 +42,9 @@ const filtrosVacios = {
 };
 
 function Perfiles() {
+
+  const { usuario } = useAuth();
+  const puedeAdministrarPerfiles = usuario?.rol === "Administrador";
 
   const [perfiles, setPerfiles] =
     useState([]);
@@ -378,13 +382,13 @@ function Perfiles() {
 
         </div>
 
-        <button
+        {puedeAdministrarPerfiles && <button
           className="perfiles-add-button"
           onClick={abrirNuevo}
         >
           <UserPlus size={18} />
           Nuevo perfil
-        </button>
+        </button>}
 
       </div>
 
@@ -726,7 +730,7 @@ function Perfiles() {
 
                       <td>
 
-                        <div className="perfil-actions">
+                        {puedeAdministrarPerfiles ? <div className="perfil-actions">
 
                           <button
                             type="button"
@@ -757,6 +761,7 @@ function Perfiles() {
                           </button>
 
                         </div>
+                        : <span>Solo lectura</span>}
 
                       </td>
 

@@ -18,6 +18,7 @@ import {
   actualizarEspacio,
   eliminarEspacio
 } from "../services/espacioService";
+import { useAuth } from "../context/useAuth";
 
 import "./Espacios.css";
 
@@ -40,6 +41,8 @@ const filtrosVacios = {
 };
 
 function Espacios() {
+  const { usuario } = useAuth();
+  const puedeAdministrarEspacios = usuario?.rol === "Administrador";
   const [espacios, setEspacios] = useState([]);
   const [todosEspacios, setTodosEspacios] = useState([]);
 
@@ -298,13 +301,13 @@ function Espacios() {
           </p>
         </div>
 
-        <button
+        {puedeAdministrarEspacios && <button
           className="espacios-add-button"
           onClick={abrirNuevo}
         >
           <Plus size={18} />
           Nuevo espacio
-        </button>
+        </button>}
 
       </div>
 
@@ -613,7 +616,7 @@ function Espacios() {
                     {/* ACCIONES */}
                     <td>
 
-                      <div className="space-actions">
+                      {puedeAdministrarEspacios ? <div className="space-actions">
 
                         <button
                           type="button"
@@ -638,6 +641,7 @@ function Espacios() {
                         </button>
 
                       </div>
+                      : <span>Solo lectura</span>}
 
                     </td>
 

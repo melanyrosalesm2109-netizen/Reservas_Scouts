@@ -2766,7 +2766,8 @@ CREATE   PROCEDURE [dbo].[paReservaFiltrar]
     @pFechaDesde DATE = NULL,
     @pFechaHasta DATE = NULL,
     @pResultado TINYINT OUTPUT,
-    @pMensaje NVARCHAR(250) OUTPUT
+    @pMensaje NVARCHAR(250) OUTPUT,
+    @pCreadorUsuarioId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -2821,6 +2822,7 @@ BEGIN
       AND (@pEstado IS NULL OR r.estado = @pEstado)
       AND (@pEspacioId IS NULL OR r.espacioId = @pEspacioId)
       AND (@pSolicitantePerfilId IS NULL OR r.solicitantePerfilId = @pSolicitantePerfilId)
+      AND (@pCreadorUsuarioId IS NULL OR r.creadoPorUsuarioId = @pCreadorUsuarioId)
       AND (@pFechaDesde IS NULL OR CONVERT(DATE, r.fechaInicio) >= @pFechaDesde)
       AND (@pFechaHasta IS NULL OR CONVERT(DATE, r.fechaFin) <= @pFechaHasta)
     ORDER BY r.fechaInicio DESC;
@@ -3901,11 +3903,13 @@ END;
 GO
 /****** Procedimiento: opciones mínimas de perfil para crear reservas ******/
 CREATE PROCEDURE [dbo].[paPerfilOpcionesReserva]
+    @pUsuarioId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     SELECT idPerfil, nombre, tipoPerfil
     FROM dbo.perfilesUsuario
+    WHERE @pUsuarioId IS NULL OR usuarioId = @pUsuarioId
     ORDER BY nombre;
 END;
 GO

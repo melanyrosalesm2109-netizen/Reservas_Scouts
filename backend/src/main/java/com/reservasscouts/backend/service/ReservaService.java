@@ -28,7 +28,8 @@ public class ReservaService {
             Integer espacioId,
             Integer solicitantePerfilId,
             LocalDate fechaDesde,
-            LocalDate fechaHasta
+            LocalDate fechaHasta,
+            Integer creadoPorUsuarioId
     ) {
 
         return repository.filtrar(
@@ -38,7 +39,8 @@ public class ReservaService {
                 espacioId,
                 solicitantePerfilId,
                 fechaDesde,
-                fechaHasta
+                fechaHasta,
+                creadoPorUsuarioId
         );
     }
 

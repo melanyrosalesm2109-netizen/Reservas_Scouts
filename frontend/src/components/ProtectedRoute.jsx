@@ -23,7 +23,13 @@ function ProtectedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && usuario.rol !== requiredRole) {
+  const requiredRoles = Array.isArray(requiredRole)
+    ? requiredRole
+    : requiredRole
+      ? [requiredRole]
+      : [];
+
+  if (requiredRoles.length > 0 && !requiredRoles.includes(usuario.rol)) {
     return <Navigate to="/reservas" replace />;
   }
 

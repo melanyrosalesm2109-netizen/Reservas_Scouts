@@ -63,7 +63,8 @@ const filtrosVacios = {
 function Reservas() {
 
   const { usuario } = useAuth();
-  const esAdministrador = usuario?.rol === "Administrador";
+  const puedeGestionarReservas =
+    usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
 
   const [reservas, setReservas] =
     useState([]);
@@ -1119,7 +1120,7 @@ function Reservas() {
 
                         <div className="table-actions">
 
-                          {esAdministrador ? (
+                          {puedeGestionarReservas ? (
                             <>
                               <button
                                 type="button"

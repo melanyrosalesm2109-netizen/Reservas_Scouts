@@ -78,7 +78,7 @@ function App() {
           <Route
             path="/espacios"
             element={
-              <ProtectedRoute requiredRole="Administrador">
+              <ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}>
                 <Espacios />
               </ProtectedRoute>
             }
@@ -87,7 +87,7 @@ function App() {
           <Route
             path="/perfiles"
             element={
-              <ProtectedRoute requiredRole="Administrador">
+              <ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}>
                 <Perfiles />
               </ProtectedRoute>
             }
@@ -96,7 +96,7 @@ function App() {
           <Route
             path="/pagos"
             element={
-              <ProtectedRoute requiredRole="Administrador">
+              <ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}>
                 <Pagos />
               </ProtectedRoute>
             }

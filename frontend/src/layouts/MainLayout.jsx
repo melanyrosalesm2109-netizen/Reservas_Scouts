@@ -146,7 +146,7 @@ function MainLayout() {
             </NavLink>
 
 
-            {usuario?.rol === "Administrador" && (
+            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
             <NavLink to="/espacios">
 
               <Building2
@@ -161,7 +161,7 @@ function MainLayout() {
             )}
 
 
-            {usuario?.rol === "Administrador" && (
+            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
             <NavLink to="/perfiles">
 
               <UsersRound
@@ -176,7 +176,7 @@ function MainLayout() {
             )}
 
 
-            {usuario?.rol === "Administrador" && (
+            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
             <NavLink to="/pagos">
 
               <CreditCard

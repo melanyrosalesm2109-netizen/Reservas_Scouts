@@ -6,7 +6,7 @@ IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Administrador')
     VALUES (N'Administrador', N'Acceso completo y administración del sistema.', SYSDATETIME());
 IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Usuario')
     INSERT INTO dbo.roles (nombre, descripcion, createdAt)
-    VALUES (N'Usuario', N'Puede consultar y crear reservas.', SYSDATETIME());
+    VALUES (N'Usuario', N'Puede crear reservas y consultar las propias.', SYSDATETIME());
 GO
 
 IF OBJECT_ID(N'dbo.auditoriaAccesos', N'U') IS NULL
@@ -147,11 +147,13 @@ END;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.paPerfilOpcionesReserva
+    @pUsuarioId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     SELECT idPerfil, nombre, tipoPerfil
     FROM dbo.perfilesUsuario
+    WHERE @pUsuarioId IS NULL OR usuarioId = @pUsuarioId
     ORDER BY nombre;
 END;
 GO
