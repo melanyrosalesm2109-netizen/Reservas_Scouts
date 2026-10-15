@@ -1,14 +1,10 @@
+import { apiFetch as fetch } from "./api";
+
 const API_URL =
   "http://localhost:8080/api/reservas";
 
 async function procesarRespuesta(response) {
-  let data = null;
-
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
     throw new Error(

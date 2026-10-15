@@ -1,14 +1,11 @@
+import { apiFetch as fetch } from "./api";
+
 const API_URL =
   "http://localhost:8080/api/perfiles";
+const API_OPCIONES_RESERVA = `${API_URL}/opciones-reserva`;
 
 async function procesarRespuesta(response) {
-  let data = null;
-
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
     throw new Error(
@@ -70,6 +67,11 @@ export async function listarPerfiles(
   const response =
     await fetch(url);
 
+  return procesarRespuesta(response);
+}
+
+export async function listarPerfilesParaReserva() {
+  const response = await fetch(API_OPCIONES_RESERVA);
   return procesarRespuesta(response);
 }
 

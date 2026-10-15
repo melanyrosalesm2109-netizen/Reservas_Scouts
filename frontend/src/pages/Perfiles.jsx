@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   UsersRound,
@@ -20,6 +20,7 @@ import {
   actualizarPerfil,
   eliminarPerfil
 } from "../services/perfilService";
+import { useAuth } from "../context/useAuth";
 
 import "./Perfiles.css";
 
@@ -41,6 +42,9 @@ const filtrosVacios = {
 };
 
 function Perfiles() {
+
+  const { usuario } = useAuth();
+  const puedeAdministrarPerfiles = usuario?.rol === "Administrador";
 
   const [perfiles, setPerfiles] =
     useState([]);
@@ -69,11 +73,7 @@ function Perfiles() {
   const [error, setError] =
     useState("");
 
-  useEffect(() => {
-    cargarTodos();
-  }, []);
-
-  const cargarTodos = async () => {
+  const cargarTodos = useCallback(async () => {
 
     try {
       setCargando(true);
@@ -93,7 +93,13 @@ function Perfiles() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarTodos();
+    });
+  }, [cargarTodos]);
 
   const handleFiltroChange = (
     event
@@ -376,13 +382,13 @@ function Perfiles() {
 
         </div>
 
-        <button
+        {puedeAdministrarPerfiles && <button
           className="perfiles-add-button"
           onClick={abrirNuevo}
         >
           <UserPlus size={18} />
           Nuevo perfil
-        </button>
+        </button>}
 
       </div>
 
@@ -724,7 +730,7 @@ function Perfiles() {
 
                       <td>
 
-                        <div className="perfil-actions">
+                        {puedeAdministrarPerfiles ? <div className="perfil-actions">
 
                           <button
                             type="button"
@@ -755,6 +761,7 @@ function Perfiles() {
                           </button>
 
                         </div>
+                        : <span>Solo lectura</span>}
 
                       </td>
 

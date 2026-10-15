@@ -526,28 +526,28 @@ public class PagoRepository {
 
         Date fechaPago =
                 rs.getDate(
-                        "fecha_pago"
+                        "fechaPago"
                 );
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         Timestamp updated =
                 rs.getTimestamp(
-                        "updated_at"
+                        "updatedAt"
                 );
 
         return new Pago(
                 rs.getInt("id"),
 
                 rs.getInt(
-                        "reserva_id"
+                        "reservaId"
                 ),
 
                 rs.getString(
-                        "reserva_codigo"
+                        "reservaCodigo"
                 ),
 
                 rs.getString(

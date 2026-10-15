@@ -91,4 +91,22 @@ public record ReservaRequest(
 
         String observaciones
 ) {
+    public ReservaRequest conCreador(Integer usuarioId) {
+        return new ReservaRequest(
+                codigo,
+                espacioId,
+                solicitantePerfilId,
+                usuarioId,
+                grupo,
+                responsable,
+                telefono,
+                email,
+                participantes,
+                tipoActividad,
+                fechaInicio,
+                fechaFin,
+                estado,
+                observaciones
+        );
+    }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -59,14 +59,7 @@ function Dashboard() {
   // CARGAR DATOS REALES
   // =====================================================
 
-  useEffect(() => {
-
-    cargarDashboard();
-
-  }, []);
-
-
-  const cargarDashboard = async () => {
+  const cargarDashboard = useCallback(async () => {
 
     try {
 
@@ -127,7 +120,13 @@ function Dashboard() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarDashboard();
+    });
+  }, [cargarDashboard]);
 
 
   // =====================================================

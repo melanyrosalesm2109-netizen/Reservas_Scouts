@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   CalendarDays,
@@ -27,8 +27,9 @@ import {
 } from "../services/espacioService";
 
 import {
-  listarPerfiles
+  listarPerfilesParaReserva
 } from "../services/perfilService";
+import { useAuth } from "../context/useAuth";
 
 import "./Reservas.css";
 
@@ -60,6 +61,10 @@ const filtrosVacios = {
 };
 
 function Reservas() {
+
+  const { usuario } = useAuth();
+  const puedeGestionarReservas =
+    usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
 
   const [reservas, setReservas] =
     useState([]);
@@ -98,11 +103,7 @@ function Reservas() {
   // CARGAR DATOS AL INICIAR
   // =====================================================
 
-  useEffect(() => {
-    cargarInicial();
-  }, []);
-
-  const cargarInicial = async () => {
+  const cargarInicial = useCallback(async () => {
 
     try {
 
@@ -116,7 +117,7 @@ function Reservas() {
       ] = await Promise.all([
         listarReservas(),
         listarEspacios(),
-        listarPerfiles()
+        listarPerfilesParaReserva()
       ]);
 
       setReservas(reservasData);
@@ -133,7 +134,13 @@ function Reservas() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
+  }, [cargarInicial]);
 
   // =====================================================
   // FILTRAR RESERVAS
@@ -1113,31 +1120,28 @@ function Reservas() {
 
                         <div className="table-actions">
 
-                          <button
-                            type="button"
-                            className="edit-button"
-                            onClick={() =>
-                              abrirEditar(
-                                reserva
-                              )
-                            }
-                            title="Editar reserva"
-                          >
-                            <Pencil size={16} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="delete-button"
-                            onClick={() =>
-                              borrarReserva(
-                                reserva
-                              )
-                            }
-                            title="Eliminar reserva"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {puedeGestionarReservas ? (
+                            <>
+                              <button
+                                type="button"
+                                className="edit-button"
+                                onClick={() => abrirEditar(reserva)}
+                                title="Editar reserva"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-button"
+                                onClick={() => borrarReserva(reserva)}
+                                title="Eliminar reserva"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <span>Solo lectura</span>
+                          )}
 
                         </div>
 

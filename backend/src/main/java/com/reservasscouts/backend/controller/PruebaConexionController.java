@@ -20,20 +20,13 @@ public class PruebaConexionController {
     @GetMapping("/prueba-db")
     public Map<String, Object> pruebaConexion() {
 
-        String baseDatos = jdbcTemplate.queryForObject(
-                "SELECT DB_NAME()",
-                String.class
-        );
-
-        Integer cantidadEspacios = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM dbo.espacios",
-                Integer.class
-        );
+        Map<String, Object> estado =
+                jdbcTemplate.queryForMap("EXEC dbo.paSistemaEstado");
 
         return Map.of(
                 "mensaje", "Conexion con SQL Server correcta",
-                "baseDatos", baseDatos,
-                "cantidadEspacios", cantidadEspacios
+                "baseDatos", estado.get("baseDatos"),
+                "cantidadEspacios", estado.get("cantidadEspacios")
         );
     }
 }

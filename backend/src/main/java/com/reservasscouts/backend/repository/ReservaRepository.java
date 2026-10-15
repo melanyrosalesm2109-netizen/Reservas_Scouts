@@ -43,7 +43,8 @@ public class ReservaRepository {
             Integer espacioId,
             Integer solicitantePerfilId,
             LocalDate fechaDesde,
-            LocalDate fechaHasta
+            LocalDate fechaHasta,
+            Integer creadoPorUsuarioId
     ) {
 
         return jdbcTemplate.execute(
@@ -51,7 +52,7 @@ public class ReservaRepository {
 
                     String sql =
                             "{call dbo.paReservaFiltrar(" +
-                            "?,?,?,?,?,?,?,?,?)}";
+                            "?,?,?,?,?,?,?,?,?,?)}";
 
                     try (CallableStatement statement =
                                  connection.prepareCall(sql)) {
@@ -96,6 +97,12 @@ public class ReservaRepository {
                                 statement,
                                 7,
                                 fechaHasta
+                        );
+
+                        setIntegerOrNull(
+                                statement,
+                                10,
+                                creadoPorUsuarioId
                         );
 
                         // OUTPUT
@@ -630,12 +637,12 @@ public class ReservaRepository {
 
         Timestamp inicio =
                 rs.getTimestamp(
-                        "fecha_inicio"
+                        "fechaInicio"
                 );
 
         Timestamp fin =
                 rs.getTimestamp(
-                        "fecha_fin"
+                        "fechaFin"
                 );
 
         return new ReservaResumen(
@@ -645,7 +652,7 @@ public class ReservaRepository {
                 rs.getString("solicitante"),
                 rs.getString("responsable"),
                 rs.getInt("participantes"),
-                rs.getString("tipo_actividad"),
+                rs.getString("tipoActividad"),
 
                 inicio == null
                         ? null
@@ -669,7 +676,7 @@ public class ReservaRepository {
 
         Integer creadoPorUsuarioId =
                 rs.getInt(
-                        "creado_por_usuario_id"
+                        "creadoPorUsuarioId"
                 );
 
         if (rs.wasNull()) {
@@ -678,22 +685,22 @@ public class ReservaRepository {
 
         Timestamp inicio =
                 rs.getTimestamp(
-                        "fecha_inicio"
+                        "fechaInicio"
                 );
 
         Timestamp fin =
                 rs.getTimestamp(
-                        "fecha_fin"
+                        "fechaFin"
                 );
 
         Timestamp created =
                 rs.getTimestamp(
-                        "created_at"
+                        "createdAt"
                 );
 
         Timestamp updated =
                 rs.getTimestamp(
-                        "updated_at"
+                        "updatedAt"
                 );
 
         return new Reserva(
@@ -701,7 +708,7 @@ public class ReservaRepository {
                 rs.getString("codigo"),
 
                 rs.getInt(
-                        "espacio_id"
+                        "espacioId"
                 ),
 
                 rs.getString(
@@ -709,7 +716,7 @@ public class ReservaRepository {
                 ),
 
                 rs.getInt(
-                        "solicitante_perfil_id"
+                        "solicitantePerfilId"
                 ),
 
                 rs.getString(
@@ -743,7 +750,7 @@ public class ReservaRepository {
                 ),
 
                 rs.getString(
-                        "tipo_actividad"
+                        "tipoActividad"
                 ),
 
                 inicio == null

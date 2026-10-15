@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   WalletCards,
@@ -24,6 +24,7 @@ import {
 import {
   listarReservas
 } from "../services/reservaService";
+import { useAuth } from "../context/useAuth";
 
 import "./Pagos.css";
 
@@ -46,6 +47,10 @@ const filtrosVacios = {
 };
 
 function Pagos() {
+
+  const { usuario } = useAuth();
+  const puedeGestionarPagos =
+    usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
 
   const [pagos, setPagos] =
     useState([]);
@@ -77,11 +82,7 @@ function Pagos() {
   const [error, setError] =
     useState("");
 
-  useEffect(() => {
-    cargarInicial();
-  }, []);
-
-  const cargarInicial = async () => {
+  const cargarInicial = useCallback(async () => {
 
     try {
 
@@ -108,7 +109,13 @@ function Pagos() {
 
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void cargarInicial();
+    });
+  }, [cargarInicial]);
 
   const handleFiltroChange = (
     event
@@ -462,13 +469,15 @@ function Pagos() {
 
         </div>
 
-        <button
-          className="pagos-add-button"
-          onClick={abrirNuevo}
-        >
-          <Plus size={18} />
-          Nuevo pago
-        </button>
+        {puedeGestionarPagos && (
+          <button
+            className="pagos-add-button"
+            onClick={abrirNuevo}
+          >
+            <Plus size={18} />
+            Nuevo pago
+          </button>
+        )}
 
       </div>
 
@@ -702,7 +711,7 @@ function Pagos() {
                 <th>Método</th>
                 <th>Fecha</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th>{puedeGestionarPagos ? "Acciones" : ""}</th>
               </tr>
 
             </thead>
@@ -800,6 +809,7 @@ function Pagos() {
 
                       <td>
 
+                        {puedeGestionarPagos ? (
                         <div className="pago-actions">
 
                           <button
@@ -827,6 +837,9 @@ function Pagos() {
                           </button>
 
                         </div>
+                        ) : (
+                          <span>Solo lectura</span>
+                        )}
 
                       </td>
 
