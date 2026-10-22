@@ -12,6 +12,7 @@ import {
 import {
   iniciarSesion
 } from "../services/authService";
+
 import { useAuth } from "../context/useAuth";
 
 import "./Login.css";
@@ -20,7 +21,9 @@ function Login() {
 
   const navigate =
     useNavigate();
-  const { setUsuario } = useAuth();
+
+  const { setUsuario } =
+    useAuth();
 
   const [email, setEmail] =
     useState("");
@@ -47,7 +50,7 @@ function Login() {
     if (!email.trim()) {
 
       setError(
-        "Ingrese su correo electrónico."
+        "Ingrese su usuario o correo."
       );
 
       return;
@@ -77,7 +80,9 @@ function Login() {
       setUsuario(usuario);
 
       navigate(
-        usuario.rol === "Administrador" ? "/dashboard" : "/reservas",
+        usuario.rol === "Administrador"
+          ? "/dashboard"
+          : "/reservas",
         { replace: true }
       );
 
@@ -134,7 +139,7 @@ function Login() {
           <div className="login-field">
 
             <label>
-              Correo electrónico
+              Usuario o correo
             </label>
 
             <div className="login-input">
@@ -142,7 +147,7 @@ function Login() {
               <Mail size={18} />
 
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={
                   (event) =>
@@ -150,7 +155,7 @@ function Login() {
                       event.target.value
                     )
                 }
-                placeholder="Ingrese su correo"
+                placeholder="Ingrese su usuario o correo"
               />
 
             </div>

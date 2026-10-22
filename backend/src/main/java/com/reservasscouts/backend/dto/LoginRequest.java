@@ -1,15 +1,11 @@
 package com.reservasscouts.backend.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
 
         @NotBlank(
-                message = "El correo es obligatorio"
-        )
-        @Email(
-                message = "El correo no es válido"
+                message = "El usuario o correo es obligatorio"
         )
         String email,
 
