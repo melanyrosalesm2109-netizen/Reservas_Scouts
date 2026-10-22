@@ -98,13 +98,65 @@ ALTER DATABASE [reservasScouts] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CL
 GO
 USE [reservasScouts]
 GO
-/****** Objeto: User [reservas_app] Fecha de script: 24/09/2026 09:13:57 a. m. ******/
+
+/* =========================================================
+   USUARIOS DEL MOTOR DE BASE DE DATOS
+   =========================================================
+   Se crean dos logins reales de SQL Server con privilegios
+   distintos para el inicio de sesión de la aplicación.
+
+   reservas_app:
+       Usuario con mayores privilegios.
+
+   reservas_consulta:
+       Usuario con privilegios restringidos.
+   ========================================================= */
+
+USE [master];
+GO
+
 IF SUSER_ID(N'reservas_app') IS NULL
-    THROW 50000, N'Cree primero el login SQL Server reservas_app para poder ejecutar este script.', 1;
+BEGIN
+    CREATE LOGIN [reservas_app]
+    WITH PASSWORD = N'ReservaApp2026!',
+         CHECK_POLICY = ON,
+         CHECK_EXPIRATION = OFF;
+END;
 GO
-CREATE USER [reservas_app] FOR LOGIN [reservas_app] WITH DEFAULT_SCHEMA=[dbo]
+
+IF SUSER_ID(N'reservas_consulta') IS NULL
+BEGIN
+    CREATE LOGIN [reservas_consulta]
+    WITH PASSWORD = N'ReservaConsulta2026!',
+         CHECK_POLICY = ON,
+         CHECK_EXPIRATION = OFF;
+END;
 GO
-GRANT EXECUTE ON SCHEMA::[dbo] TO [reservas_app]
+
+USE [reservasScouts];
+GO
+
+IF DATABASE_PRINCIPAL_ID(N'reservas_app') IS NULL
+BEGIN
+    CREATE USER [reservas_app]
+    FOR LOGIN [reservas_app]
+    WITH DEFAULT_SCHEMA = [dbo];
+END;
+GO
+
+GRANT CONNECT TO [reservas_app];
+GRANT EXECUTE ON SCHEMA::[dbo] TO [reservas_app];
+GO
+
+IF DATABASE_PRINCIPAL_ID(N'reservas_consulta') IS NULL
+BEGIN
+    CREATE USER [reservas_consulta]
+    FOR LOGIN [reservas_consulta]
+    WITH DEFAULT_SCHEMA = [dbo];
+END;
+GO
+
+GRANT CONNECT TO [reservas_consulta];
 GO
 /****** Objeto: UserDefinedFunction [dbo].[fnCorreoValido] Fecha de script: 24/09/2026 09:13:57 a. m. ******/
 SET ANSI_NULLS ON
@@ -455,9 +507,9 @@ GO
         FROM dbo.auditoriaAccesos
         GROUP BY evento;
     GO
-    IF DATABASE_PRINCIPAL_ID(N'reservas_consulta') IS NULL
-        CREATE USER [reservas_consulta] WITHOUT LOGIN;
-    GO
+    /* =========================================================
+       PERMISOS DEL USUARIO RESTRINGIDO
+       ========================================================= */
     GRANT SELECT ON OBJECT::dbo.vReservasResumen TO [reservas_consulta];
     GRANT SELECT ON OBJECT::dbo.vPerfilesConfidencial TO [reservas_consulta];
     GO
