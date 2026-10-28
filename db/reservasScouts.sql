@@ -527,24 +527,38 @@ GO
     CREATE NONCLUSTERED INDEX [ixRespaldoHistorialFecha]
         ON [dbo].[respaldoHistorial] ([creadoEn] DESC)
     GO
-    CREATE VIEW [dbo].[vAuditoriaResumen]
-    AS
-        SELECT
-            tabla COLLATE DATABASE_DEFAULT AS origen,
-            accion COLLATE DATABASE_DEFAULT AS evento,
-            COUNT_BIG(*) AS totalEventos,
-            MAX(creadoEn) AS ultimoEvento
-        FROM dbo.auditoriaReservas
-        GROUP BY tabla, accion
-        UNION ALL
-        SELECT
-            N'auditoriaAccesos' AS origen,
-            evento COLLATE DATABASE_DEFAULT,
-            COUNT_BIG(*),
-            MAX(creadoEn)
-        FROM dbo.auditoriaAccesos
-        GROUP BY evento;
-    GO
+    /****** Vista: resumen de auditoría ******/
+CREATE VIEW [dbo].[vAuditoriaResumen]
+AS
+
+    SELECT
+        tabla COLLATE DATABASE_DEFAULT AS origen,
+        accion COLLATE DATABASE_DEFAULT AS evento,
+        COUNT_BIG(*) AS totalEventos,
+        MAX(creadoEn) AS ultimoEvento
+    FROM dbo.auditoriaReservas
+    GROUP BY tabla, accion
+
+    UNION ALL
+
+    SELECT
+        N'pagos' AS origen,
+        accion COLLATE DATABASE_DEFAULT AS evento,
+        COUNT_BIG(*) AS totalEventos,
+        MAX(creadoEn) AS ultimoEvento
+    FROM dbo.auditoriaPagos
+    GROUP BY accion
+
+    UNION ALL
+
+    SELECT
+        N'accesos' AS origen,
+        evento COLLATE DATABASE_DEFAULT AS evento,
+        COUNT_BIG(*) AS totalEventos,
+        MAX(creadoEn) AS ultimoEvento
+    FROM dbo.auditoriaAccesos
+    GROUP BY evento;
+GO
     /* =========================================================
        PERMISOS DEL USUARIO RESTRINGIDO
        ========================================================= */
@@ -3957,6 +3971,139 @@ BEGIN
     SELECT origen, evento, totalEventos, ultimoEvento
     FROM dbo.vAuditoriaResumen
     ORDER BY ultimoEvento DESC, origen, evento;
+END;
+GO
+
+/****** Procedimiento: historial detallado de auditoría ******/
+CREATE PROCEDURE [dbo].[paAuditoriaDetalle]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (500)
+        eventos.idAuditoria,
+        eventos.origen,
+        eventos.evento,
+        eventos.registroId,
+        eventos.usuario,
+        eventos.usuarioBd,
+        eventos.detalle,
+        eventos.valoresAnteriores,
+        eventos.valoresNuevos,
+        eventos.creadoEn
+
+    FROM
+    (
+        /* Cambios generales */
+        SELECT
+            ar.idAuditoria,
+            ar.tabla COLLATE DATABASE_DEFAULT AS origen,
+            ar.accion COLLATE DATABASE_DEFAULT AS evento,
+            ar.idRegistro AS registroId,
+
+            COALESCE(
+                NULLIF(ar.usuarioAppNombre, N''),
+                NULLIF(ar.usuarioBd, N''),
+                N'No identificado'
+            ) AS usuario,
+
+            ar.usuarioBd,
+            ar.detalle,
+
+            CASE
+                WHEN ISJSON(ar.detalle) = 1
+                THEN JSON_QUERY(ar.detalle, '$.antes')
+                ELSE NULL
+            END AS valoresAnteriores,
+
+            CASE
+                WHEN ISJSON(ar.detalle) = 1
+                THEN JSON_QUERY(ar.detalle, '$.despues')
+                ELSE NULL
+            END AS valoresNuevos,
+
+            ar.creadoEn
+
+        FROM dbo.auditoriaReservas AS ar
+
+
+        UNION ALL
+
+
+        /* Cambios de pagos */
+        SELECT
+            ap.idAuditoriaPago,
+            N'pagos',
+            ap.accion COLLATE DATABASE_DEFAULT,
+            ap.pagoId,
+
+            COALESCE(
+                NULLIF(ap.usuarioAppNombre, N''),
+                NULLIF(ap.usuarioBd, N''),
+                N'No identificado'
+            ),
+
+            ap.usuarioBd,
+
+            CONCAT(
+                N'Reserva asociada: ',
+                COALESCE(
+                    CONVERT(NVARCHAR(20), ap.reservaId),
+                    N'No indicada'
+                )
+            ),
+
+            ap.valoresAnteriores,
+            ap.valoresNuevos,
+            ap.creadoEn
+
+        FROM dbo.auditoriaPagos AS ap
+
+
+        UNION ALL
+
+
+        /* Accesos, respaldo y restauración */
+        SELECT
+            aa.idAuditoriaAcceso,
+            N'accesos',
+            aa.evento COLLATE DATABASE_DEFAULT,
+            aa.usuarioId,
+
+            COALESCE(
+                u.email,
+                N'No identificado'
+            ),
+
+            CAST(NULL AS NVARCHAR(120)),
+
+            CONCAT(
+                N'IP: ',
+                COALESCE(
+                    CONVERT(NVARCHAR(45), aa.direccionIp),
+                    N'No disponible'
+                ),
+                N' | Navegador: ',
+                COALESCE(
+                    aa.agenteUsuario,
+                    N'No disponible'
+                )
+            ),
+
+            CAST(NULL AS NVARCHAR(MAX)),
+            CAST(NULL AS NVARCHAR(MAX)),
+            aa.creadoEn
+
+        FROM dbo.auditoriaAccesos AS aa
+
+        LEFT JOIN dbo.usuarios AS u
+            ON u.id = aa.usuarioId
+
+    ) AS eventos
+
+    ORDER BY
+        eventos.creadoEn DESC,
+        eventos.idAuditoria DESC;
 END;
 GO
 /****** Procedimientos: catálogo de respaldos creados por la aplicación ******/
