@@ -132,6 +132,21 @@ BEGIN
          CHECK_EXPIRATION = OFF;
 END;
 GO
+IF SUSER_ID(N'reservas_maintenance') IS NULL
+BEGIN
+    CREATE LOGIN [reservas_maintenance]
+    WITH PASSWORD = N'ReservaMaintenance2026!',
+         CHECK_POLICY = ON,
+         CHECK_EXPIRATION = OFF;
+END;
+GO
+
+IF IS_SRVROLEMEMBER(N'dbcreator', N'reservas_maintenance') <> 1
+BEGIN
+    ALTER SERVER ROLE [dbcreator]
+    ADD MEMBER [reservas_maintenance];
+END;
+GO
 
 USE [reservasScouts];
 GO
@@ -457,6 +472,29 @@ CREATE TABLE [dbo].[auditoriaReservas](
 	[idAuditoria] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+/****** Objeto: Table [dbo].[auditoriaPagos] ******/
+CREATE TABLE [dbo].[auditoriaPagos](
+    [idAuditoriaPago] [bigint] IDENTITY(1,1) NOT NULL,
+    [pagoId] [int] NOT NULL,
+    [reservaId] [int] NULL,
+    [accion] [nvarchar](10) NOT NULL,
+    [valoresAnteriores] [nvarchar](max) NULL,
+    [valoresNuevos] [nvarchar](max) NULL,
+    [usuarioAppId] [int] NULL,
+    [usuarioAppNombre] [nvarchar](160) NULL,
+    [usuarioBd] [nvarchar](120) NOT NULL,
+    [creadoEn] [datetime2](0) NOT NULL
+        CONSTRAINT [dfAuditoriaPagosCreadoEn]
+        DEFAULT (sysdatetime()),
+
+    CONSTRAINT [pkAuditoriaPagos]
+        PRIMARY KEY CLUSTERED ([idAuditoriaPago] ASC),
+
+    CONSTRAINT [ckAuditoriaPagosAccion]
+        CHECK ([accion] IN (N'INSERT', N'UPDATE', N'DELETE'))
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
 GO
 /****** Objeto: Table [dbo].[auditoriaAccesos] ******/
 CREATE TABLE [dbo].[auditoriaAccesos](
@@ -3953,6 +3991,37 @@ BEGIN
         VALUES (@pNombreArchivo, @pUsuarioId, @pCreadoEn, @pBytes);
 END;
 GO
+/****** Procedimiento: crear respaldo completo de reservasScouts ******/
+CREATE PROCEDURE [dbo].[paRespaldoCompleto]
+    @pRuta NVARCHAR(4000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @pRuta IS NULL OR LTRIM(RTRIM(@pRuta)) = N''
+    BEGIN
+        THROW 50040, N'La ruta del respaldo es obligatoria.', 1;
+    END;
+
+    BACKUP DATABASE [reservasScouts]
+    TO DISK = @pRuta
+    WITH
+        COPY_ONLY,
+        CHECKSUM,
+        COMPRESSION,
+        INIT;
+
+    RESTORE VERIFYONLY
+    FROM DISK = @pRuta
+    WITH CHECKSUM;
+END;
+GO
+
+GRANT EXECUTE
+ON OBJECT::dbo.paRespaldoCompleto
+TO [reservas_maintenance];
+GO
+
 /****** Procedimiento: opciones mínimas de perfil para crear reservas ******/
 CREATE PROCEDURE [dbo].[paPerfilOpcionesReserva]
     @pUsuarioId INT = NULL
@@ -4135,38 +4204,503 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @usuarioBd NVARCHAR(120) = LEFT(ORIGINAL_LOGIN(), 120);
-
-    INSERT INTO dbo.auditoriaReservas
+    INSERT INTO dbo.auditoriaPagos
     (
-        tabla, idRegistro, accion, detalle,
-        usuarioAppId, usuarioAppNombre, usuarioBd, creadoEn
+        pagoId,
+        reservaId,
+        accion,
+        valoresAnteriores,
+        valoresNuevos,
+        usuarioAppId,
+        usuarioAppNombre,
+        usuarioBd,
+        creadoEn
     )
     SELECT
-        N'pagos',
         COALESCE(i.id, d.id),
+
+        COALESCE(i.reservaId, d.reservaId),
+
         CASE
             WHEN d.id IS NULL THEN N'INSERT'
             WHEN i.id IS NULL THEN N'DELETE'
             ELSE N'UPDATE'
         END,
-        (
-            SELECT
-                JSON_QUERY(CASE WHEN d.id IS NOT NULL THEN
-                    (SELECT d.reservaId, d.monto, d.metodo, d.fechaPago, d.estado
-                     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES)
-                END) AS antes,
-                JSON_QUERY(CASE WHEN i.id IS NOT NULL THEN
-                    (SELECT i.reservaId, i.monto, i.metodo, i.fechaPago, i.estado
-                     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES)
-                END) AS despues
-            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+
+        CASE
+            WHEN d.id IS NOT NULL THEN
+            (
+                SELECT
+                    d.reservaId,
+                    d.monto,
+                    d.metodo,
+                    d.fechaPago,
+                    d.estado,
+                    d.comprobante
+                FOR JSON PATH,
+                    WITHOUT_ARRAY_WRAPPER,
+                    INCLUDE_NULL_VALUES
+            )
+            ELSE NULL
+        END,
+
+        CASE
+            WHEN i.id IS NOT NULL THEN
+            (
+                SELECT
+                    i.reservaId,
+                    i.monto,
+                    i.metodo,
+                    i.fechaPago,
+                    i.estado,
+                    i.comprobante
+                FOR JSON PATH,
+                    WITHOUT_ARRAY_WRAPPER,
+                    INCLUDE_NULL_VALUES
+            )
+            ELSE NULL
+        END,
+
+        TRY_CONVERT(
+            INT,
+            SESSION_CONTEXT(N'app_usuario_id')
         ),
-        NULL, NULL, @usuarioBd, SYSDATETIME()
+
+        TRY_CONVERT(
+            NVARCHAR(160),
+            SESSION_CONTEXT(N'app_usuario_nombre')
+        ),
+
+        LEFT(ORIGINAL_LOGIN(), 120),
+
+        SYSDATETIME()
+
     FROM inserted AS i
-    FULL OUTER JOIN deleted AS d ON d.id = i.id;
+
+    FULL OUTER JOIN deleted AS d
+        ON d.id = i.id;
 END;
 GO
+/* =========================================================
+   DATOS INICIALES PARA PRUEBAS DEL SISTEMA
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   USUARIOS DE APLICACIÓN
+   Estas cuentas también sirven como cuentas asociadas
+   a reservas_app y reservas_consulta.
+   --------------------------------------------------------- */
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.usuarios
+    WHERE email = N'admin@reservasscouts.test'
+)
+BEGIN
+    INSERT INTO dbo.usuarios
+    (
+        rolId,
+        email,
+        passwordHash,
+        estado
+    )
+    VALUES
+    (
+        (
+            SELECT TOP 1 id
+            FROM dbo.roles
+            WHERE nombre = N'Administrador'
+        ),
+        N'admin@reservasscouts.test',
+        N'$2y$10$Y.R2Fn6/mGY8/y89r4wBjuYHtr1S9nm9R/vnFXmY8wfhAlb1BKg6q',
+        N'ACTIVO'
+    );
+END;
+GO
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.usuarios
+    WHERE email = N'usuario@reservasscouts.test'
+)
+BEGIN
+    INSERT INTO dbo.usuarios
+    (
+        rolId,
+        email,
+        passwordHash,
+        estado
+    )
+    VALUES
+    (
+        (
+            SELECT TOP 1 id
+            FROM dbo.roles
+            WHERE nombre = N'Usuario'
+        ),
+        N'usuario@reservasscouts.test',
+        N'$2y$10$d1Br75ptBgWp1AYtRz/CMuoPaj0LLyRBOhD1YaTB6v4j88S/TfaK.',
+        N'ACTIVO'
+    );
+END;
+GO
+
+
+/* ---------------------------------------------------------
+   PERFILES DE PRUEBA
+   --------------------------------------------------------- */
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.perfilesUsuario
+    WHERE identificacion = N'DEMO-ADMIN-001'
+)
+BEGIN
+    INSERT INTO dbo.perfilesUsuario
+    (
+        usuarioId,
+        nombre,
+        identificacion,
+        telefono,
+        correoContacto,
+        tipoPerfil,
+        direccion
+    )
+    VALUES
+    (
+        (
+            SELECT id
+            FROM dbo.usuarios
+            WHERE email = N'admin@reservasscouts.test'
+        ),
+        N'Administrador Demo',
+        N'DEMO-ADMIN-001',
+        N'8888-0001',
+        N'admin@reservasscouts.test',
+        N'Persona',
+        N'Liberia, Guanacaste'
+    );
+END;
+GO
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.perfilesUsuario
+    WHERE identificacion = N'DEMO-USUARIO-001'
+)
+BEGIN
+    INSERT INTO dbo.perfilesUsuario
+    (
+        usuarioId,
+        nombre,
+        identificacion,
+        telefono,
+        correoContacto,
+        tipoPerfil,
+        direccion
+    )
+    VALUES
+    (
+        (
+            SELECT id
+            FROM dbo.usuarios
+            WHERE email = N'usuario@reservasscouts.test'
+        ),
+        N'Usuario Demo',
+        N'DEMO-USUARIO-001',
+        N'8888-0002',
+        N'usuario@reservasscouts.test',
+        N'Persona',
+        N'Liberia, Guanacaste'
+    );
+END;
+GO
+
+
+/* ---------------------------------------------------------
+   ESPACIOS DE PRUEBA
+   --------------------------------------------------------- */
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.espacios
+    WHERE nombre = N'Campo Demo'
+)
+BEGIN
+    INSERT INTO dbo.espacios
+    (
+        nombre,
+        descripcion,
+        ubicacion,
+        capacidad,
+        costo,
+        estado
+    )
+    VALUES
+    (
+        N'Campo Demo',
+        N'Espacio de prueba para reservas.',
+        N'Liberia',
+        100,
+        100000,
+        N'DISPONIBLE'
+    );
+END;
+GO
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.espacios
+    WHERE nombre = N'Salón Demo'
+)
+BEGIN
+    INSERT INTO dbo.espacios
+    (
+        nombre,
+        descripcion,
+        ubicacion,
+        capacidad,
+        costo,
+        estado
+    )
+    VALUES
+    (
+        N'Salón Demo',
+        N'Salón utilizado para pruebas del sistema.',
+        N'Liberia',
+        50,
+        75000,
+        N'DISPONIBLE'
+    );
+END;
+GO
+
+
+/* ---------------------------------------------------------
+   RESERVAS DE PRUEBA
+   --------------------------------------------------------- */
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.reservas
+    WHERE codigo = N'DEMO-RES-001'
+)
+BEGIN
+    INSERT INTO dbo.reservas
+    (
+        codigo,
+        espacioId,
+        solicitantePerfilId,
+        creadoPorUsuarioId,
+        grupo,
+        responsable,
+        telefono,
+        email,
+        participantes,
+        tipoActividad,
+        fechaInicio,
+        fechaFin,
+        estado,
+        observaciones
+    )
+    VALUES
+    (
+        N'DEMO-RES-001',
+
+        (
+            SELECT TOP 1 id
+            FROM dbo.espacios
+            WHERE nombre = N'Campo Demo'
+        ),
+
+        (
+            SELECT TOP 1 idPerfil
+            FROM dbo.perfilesUsuario
+            WHERE identificacion = N'DEMO-USUARIO-001'
+        ),
+
+        (
+            SELECT TOP 1 id
+            FROM dbo.usuarios
+            WHERE email = N'admin@reservasscouts.test'
+        ),
+
+        N'Grupo Demo',
+        N'Usuario Demo',
+        N'8888-0002',
+        N'usuario@reservasscouts.test',
+        25,
+        N'Actividad Scout',
+        DATEADD(DAY, 7, SYSDATETIME()),
+        DATEADD(HOUR, 4, DATEADD(DAY, 7, SYSDATETIME())),
+        N'APROBADA',
+        N'Reserva de prueba.'
+    );
+END;
+GO
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.reservas
+    WHERE codigo = N'DEMO-RES-002'
+)
+BEGIN
+    INSERT INTO dbo.reservas
+    (
+        codigo,
+        espacioId,
+        solicitantePerfilId,
+        creadoPorUsuarioId,
+        grupo,
+        responsable,
+        telefono,
+        email,
+        participantes,
+        tipoActividad,
+        fechaInicio,
+        fechaFin,
+        estado,
+        observaciones
+    )
+    VALUES
+    (
+        N'DEMO-RES-002',
+
+        (
+            SELECT TOP 1 id
+            FROM dbo.espacios
+            WHERE nombre = N'Salón Demo'
+        ),
+
+        (
+            SELECT TOP 1 idPerfil
+            FROM dbo.perfilesUsuario
+            WHERE identificacion = N'DEMO-USUARIO-001'
+        ),
+
+        (
+            SELECT TOP 1 id
+            FROM dbo.usuarios
+            WHERE email = N'admin@reservasscouts.test'
+        ),
+
+        N'Grupo Demo',
+        N'Usuario Demo',
+        N'8888-0002',
+        N'usuario@reservasscouts.test',
+        20,
+        N'Reunión Scout',
+        DATEADD(DAY, 14, SYSDATETIME()),
+        DATEADD(HOUR, 3, DATEADD(DAY, 14, SYSDATETIME())),
+        N'PENDIENTE',
+        N'Reserva de prueba.'
+    );
+END;
+GO
+
+
+/* ---------------------------------------------------------
+   PAGOS DE PRUEBA
+   --------------------------------------------------------- */
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM dbo.pagos AS p
+    INNER JOIN dbo.reservas AS r
+        ON r.id = p.reservaId
+    WHERE r.codigo = N'DEMO-RES-001'
+)
+BEGIN
+    INSERT INTO dbo.pagos
+    (
+        reservaId,
+        monto,
+        metodo,
+        fechaPago,
+        estado,
+        comprobante,
+        notas
+    )
+    VALUES
+    (
+        (
+            SELECT TOP 1 id
+            FROM dbo.reservas
+            WHERE codigo = N'DEMO-RES-001'
+        ),
+        50000,
+        N'SINPE Móvil',
+        CONVERT(DATE, SYSDATETIME()),
+        N'PAGADO',
+        N'DEMO-PAGO-001',
+        N'Pago de prueba.'
+    );
+END;
+GO
+
+
+
 USE [master]
 GO
-ALTER DATABASE [reservasScouts] SET  READ_WRITE 
+
+/****** Procedimiento: restaurar la base reservasScouts ******/
+CREATE OR ALTER PROCEDURE [dbo].[paRestaurarReservasScouts]
+    @pRuta NVARCHAR(4000)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @pRuta IS NULL OR LTRIM(RTRIM(@pRuta)) = N''
+    BEGIN
+        THROW 50041, N'La ruta del respaldo es obligatoria.', 1;
+    END;
+
+    RESTORE VERIFYONLY
+    FROM DISK = @pRuta
+    WITH CHECKSUM;
+
+    BEGIN TRY
+        ALTER DATABASE [reservasScouts]
+        SET SINGLE_USER
+        WITH ROLLBACK IMMEDIATE;
+
+        RESTORE DATABASE [reservasScouts]
+        FROM DISK = @pRuta
+        WITH
+            REPLACE,
+            RECOVERY,
+            CHECKSUM;
+
+        ALTER DATABASE [reservasScouts]
+        SET MULTI_USER;
+    END TRY
+    BEGIN CATCH
+        IF DB_ID(N'reservasScouts') IS NOT NULL
+        BEGIN
+            ALTER DATABASE [reservasScouts]
+            SET MULTI_USER;
+        END;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+IF DATABASE_PRINCIPAL_ID(N'reservas_maintenance') IS NULL
+BEGIN
+    CREATE USER [reservas_maintenance]
+    FOR LOGIN [reservas_maintenance];
+END;
+GO
+
+GRANT EXECUTE
+ON OBJECT::dbo.paRestaurarReservasScouts
+TO [reservas_maintenance];
+GO
+
+ALTER DATABASE [reservasScouts] SET READ_WRITE
+GO
