@@ -1,11 +1,36 @@
-USE [master] 
+/* =========================================================
+   SISTEMA DE RESERVAS SCOUTS
+   Script principal de creación de base de datos
+
+   Contenido:
+   1. Creación y configuración básica de la base.
+   2. Usuarios del motor de SQL Server y permisos.
+   3. Funciones.
+   4. Tablas, vistas e índices.
+   5. Restricciones, valores por defecto y relaciones.
+   6. Procedimientos almacenados.
+   7. Triggers de auditoría.
+   8. Datos iniciales para pruebas.
+   9. Restauración de la base de datos.
+
+   Nota:
+   Las rutas físicas se definen mediante variables SQLCMD.
+   Ejecutar este archivo con SQLCMD Mode habilitado en SSMS.
+   ========================================================= */
+
+
+/* =========================================================
+   1. CREACIÓN DE LA BASE DE DATOS
+   ========================================================= */
+
+USE [master];
 GO
-/****** Objeto: Database [reservasScouts] Fecha de script: 24/09/2026 09:13:57 a. m. ******/
+
 :setvar DataFilePath "C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\reservasScouts.mdf"
 :setvar LogFilePath "C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\reservasScouts_log.ldf"
+
 CREATE DATABASE [reservasScouts]
- CONTAINMENT = NONE
- ON PRIMARY
+ON PRIMARY
 (
     NAME = N'reservasScouts',
     FILENAME = N'$(DataFilePath)',
@@ -20,96 +45,50 @@ LOG ON
     SIZE = 32MB,
     MAXSIZE = 1024MB,
     FILEGROWTH = 32MB
-)
-    WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+);
 GO
-ALTER DATABASE [reservasScouts] SET COMPATIBILITY_LEVEL = 170
+
+/* Se utiliza recuperación SIMPLE porque el proyecto trabaja
+   con respaldos completos gestionados desde la aplicación. */
+ALTER DATABASE [reservasScouts]
+SET RECOVERY SIMPLE;
 GO
-IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
-begin
-EXEC [reservasScouts].[dbo].[sp_fulltext_database] @action = 'enable'
-end
+
+/* CHECKSUM permite detectar daños en páginas de datos. */
+ALTER DATABASE [reservasScouts]
+SET PAGE_VERIFY CHECKSUM;
 GO
-ALTER DATABASE [reservasScouts] SET ANSI_NULL_DEFAULT OFF 
+
+/* La aplicación requiere conexiones concurrentes. */
+ALTER DATABASE [reservasScouts]
+SET MULTI_USER;
 GO
-ALTER DATABASE [reservasScouts] SET ANSI_NULLS OFF 
+
+USE [reservasScouts];
 GO
-ALTER DATABASE [reservasScouts] SET ANSI_PADDING OFF 
+
+/* Configuración requerida para funciones, vistas y procedimientos. */
+SET ANSI_NULLS ON;
 GO
-ALTER DATABASE [reservasScouts] SET ANSI_WARNINGS OFF 
+
+SET QUOTED_IDENTIFIER ON;
 GO
-ALTER DATABASE [reservasScouts] SET ARITHABORT OFF 
-GO
-ALTER DATABASE [reservasScouts] SET AUTO_CLOSE OFF 
-GO
-ALTER DATABASE [reservasScouts] SET AUTO_SHRINK OFF 
-GO
-ALTER DATABASE [reservasScouts] SET AUTO_UPDATE_STATISTICS ON 
-GO
-ALTER DATABASE [reservasScouts] SET CURSOR_CLOSE_ON_COMMIT OFF 
-GO
-ALTER DATABASE [reservasScouts] SET CURSOR_DEFAULT  GLOBAL 
-GO
-ALTER DATABASE [reservasScouts] SET CONCAT_NULL_YIELDS_NULL OFF 
-GO
-ALTER DATABASE [reservasScouts] SET NUMERIC_ROUNDABORT OFF 
-GO
-ALTER DATABASE [reservasScouts] SET QUOTED_IDENTIFIER OFF 
-GO
-ALTER DATABASE [reservasScouts] SET RECURSIVE_TRIGGERS OFF 
-GO
-ALTER DATABASE [reservasScouts] SET  ENABLE_BROKER 
-GO
-ALTER DATABASE [reservasScouts] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
-GO
-ALTER DATABASE [reservasScouts] SET DATE_CORRELATION_OPTIMIZATION OFF 
-GO
-ALTER DATABASE [reservasScouts] SET TRUSTWORTHY OFF 
-GO
-ALTER DATABASE [reservasScouts] SET ALLOW_SNAPSHOT_ISOLATION OFF 
-GO
-ALTER DATABASE [reservasScouts] SET PARAMETERIZATION SIMPLE 
-GO
-ALTER DATABASE [reservasScouts] SET READ_COMMITTED_SNAPSHOT OFF 
-GO
-ALTER DATABASE [reservasScouts] SET HONOR_BROKER_PRIORITY OFF 
-GO
-ALTER DATABASE [reservasScouts] SET RECOVERY SIMPLE
-GO
-ALTER DATABASE [reservasScouts] SET  MULTI_USER 
-GO
-ALTER DATABASE [reservasScouts] SET PAGE_VERIFY CHECKSUM  
-GO
-ALTER DATABASE [reservasScouts] SET DB_CHAINING OFF 
-GO
-ALTER DATABASE [reservasScouts] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
-GO
-ALTER DATABASE [reservasScouts] SET TARGET_RECOVERY_TIME = 60 SECONDS 
-GO
-ALTER DATABASE [reservasScouts] SET DELAYED_DURABILITY = DISABLED 
-GO
-ALTER DATABASE [reservasScouts] SET OPTIMIZED_LOCKING = OFF 
-GO
-ALTER DATABASE [reservasScouts] SET ACCELERATED_DATABASE_RECOVERY = OFF  
-GO
-ALTER DATABASE [reservasScouts] SET QUERY_STORE = ON
-GO
-ALTER DATABASE [reservasScouts] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 1000, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200, WAIT_STATS_CAPTURE_MODE = ON)
-GO
-USE [reservasScouts]
-GO
+
 
 /* =========================================================
-   USUARIOS DEL MOTOR DE BASE DE DATOS
+   2. USUARIOS DEL MOTOR DE BASE DE DATOS
    =========================================================
-   Se crean dos logins reales de SQL Server con privilegios
-   distintos para el inicio de sesión de la aplicación.
+   Se crean logins reales de SQL Server con funciones distintas:
 
    reservas_app:
-       Usuario con mayores privilegios.
+       Usuario principal utilizado por la aplicación.
 
    reservas_consulta:
-       Usuario con privilegios restringidos.
+       Usuario con privilegios restringidos de consulta.
+
+   reservas_maintenance:
+       Usuario utilizado para las operaciones de respaldo
+       y restauración de la base de datos.
    ========================================================= */
 
 USE [master];
@@ -173,11 +152,10 @@ GO
 
 GRANT CONNECT TO [reservas_consulta];
 GO
-/****** Objeto: UserDefinedFunction [dbo].[fnCorreoValido] Fecha de script: 24/09/2026 09:13:57 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* FUNCIÓN: fnCorreoValido */
+/* =========================================================
+   3. FUNCIONES
+   ========================================================= */
 
 CREATE FUNCTION [dbo].[fnCorreoValido]
 (
@@ -230,12 +208,7 @@ BEGIN
 END;
 
 GO
-/****** Objeto: UserDefinedFunction [dbo].[fnMascararCorreo] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* FUNCIÓN: fnMascararCorreo */
 CREATE FUNCTION [dbo].[fnMascararCorreo]
 (
     @correo NVARCHAR(160)
@@ -255,12 +228,7 @@ BEGIN
 END;
 
 GO
-/****** Objeto: UserDefinedFunction [dbo].[fnMascararTelefono] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* FUNCIÓN: fnMascararTelefono */
 CREATE FUNCTION [dbo].[fnMascararTelefono]
 (
     @telefono NVARCHAR(30)
@@ -279,11 +247,11 @@ BEGIN
 END;
 
 GO
-/****** Objeto: Table [dbo].[perfilesUsuario] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: perfilesUsuario */
+/* =========================================================
+   4. TABLAS, VISTAS E ÍNDICES
+   ========================================================= */
+
 CREATE TABLE [dbo].[perfilesUsuario](
 	[idPerfil] [int] IDENTITY(1,1) NOT NULL,
 	[usuarioId] [int] NULL,
@@ -298,15 +266,10 @@ CREATE TABLE [dbo].[perfilesUsuario](
  CONSTRAINT [pkPerfilesUsuario] PRIMARY KEY CLUSTERED 
 (
 	[idPerfil] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
-/****** Objeto: View [dbo].[vPerfilesConfidencial] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* VISTA: vPerfilesConfidencial */
 CREATE VIEW [dbo].[vPerfilesConfidencial]
 AS
 SELECT
@@ -323,11 +286,7 @@ SELECT
 FROM dbo.perfilesUsuario AS p;
 
 GO
-/****** Objeto: Table [dbo].[usuarios] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: usuarios */
 CREATE TABLE [dbo].[usuarios](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[rolId] [int] NOT NULL,
@@ -339,18 +298,14 @@ CREATE TABLE [dbo].[usuarios](
  CONSTRAINT [pkUsuarios] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+),
  CONSTRAINT [uqUsuariosEmail] UNIQUE NONCLUSTERED 
 (
 	[email] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[espacios] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: espacios */
 CREATE TABLE [dbo].[espacios](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[nombre] [nvarchar](120) NOT NULL,
@@ -365,14 +320,10 @@ CREATE TABLE [dbo].[espacios](
  CONSTRAINT [pkEspacios] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[reservas] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: reservas */
 CREATE TABLE [dbo].[reservas](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[codigo] [nvarchar](20) NOT NULL,
@@ -394,19 +345,14 @@ CREATE TABLE [dbo].[reservas](
  CONSTRAINT [pkReservas] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+),
  CONSTRAINT [uqReservasCodigo] UNIQUE NONCLUSTERED 
 (
 	[codigo] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Objeto: View [dbo].[vReservasResumen] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* VISTA: vReservasResumen */
 CREATE VIEW [dbo].[vReservasResumen]
 AS
 SELECT
@@ -434,11 +380,7 @@ LEFT JOIN dbo.perfilesUsuario AS pc
     ON pc.usuarioId = u.id;
 
 GO
-/****** Objeto: Table [dbo].[actividad] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: actividad */
 CREATE TABLE [dbo].[actividad](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[usuarioId] [int] NULL,
@@ -449,14 +391,10 @@ CREATE TABLE [dbo].[actividad](
  CONSTRAINT [pkActividad] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[auditoriaReservas] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: auditoriaReservas */
 CREATE TABLE [dbo].[auditoriaReservas](
 	[idAuditoria] [bigint] IDENTITY(1,1) NOT NULL,
 	[tabla] [nvarchar](40) NOT NULL,
@@ -470,11 +408,11 @@ CREATE TABLE [dbo].[auditoriaReservas](
  CONSTRAINT [pkAuditoriaReservas] PRIMARY KEY CLUSTERED 
 (
 	[idAuditoria] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
 
-/****** Objeto: Table [dbo].[auditoriaPagos] ******/
+/* TABLA: auditoriaPagos */
 CREATE TABLE [dbo].[auditoriaPagos](
     [idAuditoriaPago] [bigint] IDENTITY(1,1) NOT NULL,
     [pagoId] [int] NOT NULL,
@@ -496,7 +434,7 @@ CREATE TABLE [dbo].[auditoriaPagos](
         CHECK ([accion] IN (N'INSERT', N'UPDATE', N'DELETE'))
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
 GO
-/****** Objeto: Table [dbo].[auditoriaAccesos] ******/
+/* TABLA: auditoriaAccesos */
 CREATE TABLE [dbo].[auditoriaAccesos](
     [idAuditoriaAcceso] [bigint] IDENTITY(1,1) NOT NULL,
     [usuarioId] [int] NULL,
@@ -527,7 +465,7 @@ GO
     CREATE NONCLUSTERED INDEX [ixRespaldoHistorialFecha]
         ON [dbo].[respaldoHistorial] ([creadoEn] DESC)
     GO
-    /****** Vista: resumen de auditoría ******/
+    /* Vista: resumen de auditoría */
 CREATE VIEW [dbo].[vAuditoriaResumen]
 AS
 
@@ -573,11 +511,7 @@ GO
             ALTER ROLE [db_backupoperator] ADD MEMBER [reservas_maintenance];
     END;
     GO
-/****** Objeto: Table [dbo].[pagos] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: pagos */
 CREATE TABLE [dbo].[pagos](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[reservaId] [int] NOT NULL,
@@ -592,14 +526,10 @@ CREATE TABLE [dbo].[pagos](
  CONSTRAINT [pkPagos] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[permisos] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: permisos */
 CREATE TABLE [dbo].[permisos](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[clave] [nvarchar](80) NOT NULL,
@@ -608,18 +538,14 @@ CREATE TABLE [dbo].[permisos](
  CONSTRAINT [pkPermisos] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+),
  CONSTRAINT [uqPermisosClave] UNIQUE NONCLUSTERED 
 (
 	[clave] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[rolPermisos] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: rolPermisos */
 CREATE TABLE [dbo].[rolPermisos](
 	[rolId] [int] NOT NULL,
 	[permisoId] [int] NOT NULL,
@@ -627,14 +553,10 @@ CREATE TABLE [dbo].[rolPermisos](
 (
 	[rolId] ASC,
 	[permisoId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
-/****** Objeto: Table [dbo].[roles] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/* TABLA: roles */
 CREATE TABLE [dbo].[roles](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[nombre] [nvarchar](50) NOT NULL,
@@ -643,11 +565,11 @@ CREATE TABLE [dbo].[roles](
  CONSTRAINT [pkRoles] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+),
  CONSTRAINT [uqRolesNombre] UNIQUE NONCLUSTERED 
 (
 	[nombre] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 ) ON [PRIMARY]
 GO
 IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Administrador')
@@ -657,73 +579,73 @@ IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Usuario')
     INSERT INTO dbo.roles (nombre, descripcion, createdAt)
     VALUES (N'Usuario', N'Puede consultar y crear reservas.', SYSDATETIME());
 GO
-/****** Objeto: Index [ixActividadUsuario] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixActividadUsuario */
 CREATE NONCLUSTERED INDEX [ixActividadUsuario] ON [dbo].[actividad]
 (
 	[usuarioId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixAuditoriaUsuario] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixAuditoriaUsuario */
 CREATE NONCLUSTERED INDEX [ixAuditoriaUsuario] ON [dbo].[auditoriaReservas]
 (
 	[usuarioAppId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixPagosReserva] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixPagosReserva */
 CREATE NONCLUSTERED INDEX [ixPagosReserva] ON [dbo].[pagos]
 (
 	[reservaId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-SET ANSI_PADDING ON
-GO
-/****** Objeto: Index [uxPerfilesUsuarioIdentificacion] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: uxPerfilesUsuarioIdentificacion */
 CREATE UNIQUE NONCLUSTERED INDEX [uxPerfilesUsuarioIdentificacion] ON [dbo].[perfilesUsuario]
 (
 	[identificacion] ASC
 )
 WHERE ([identificacion] IS NOT NULL)
-WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 GO
-/****** Objeto: Index [uxPerfilesUsuarioUsuario] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: uxPerfilesUsuarioUsuario */
 CREATE UNIQUE NONCLUSTERED INDEX [uxPerfilesUsuarioUsuario] ON [dbo].[perfilesUsuario]
 (
 	[usuarioId] ASC
 )
 WHERE ([usuarioId] IS NOT NULL)
-WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 GO
-/****** Objeto: Index [ixReservasCreadoPor] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixReservasCreadoPor */
 CREATE NONCLUSTERED INDEX [ixReservasCreadoPor] ON [dbo].[reservas]
 (
 	[creadoPorUsuarioId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixReservasEspacio] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixReservasEspacio */
 CREATE NONCLUSTERED INDEX [ixReservasEspacio] ON [dbo].[reservas]
 (
 	[espacioId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixReservasFechas] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixReservasFechas */
 CREATE NONCLUSTERED INDEX [ixReservasFechas] ON [dbo].[reservas]
 (
 	[fechaInicio] ASC,
 	[fechaFin] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixReservasSolicitante] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixReservasSolicitante */
 CREATE NONCLUSTERED INDEX [ixReservasSolicitante] ON [dbo].[reservas]
 (
 	[solicitantePerfilId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
-/****** Objeto: Index [ixUsuariosRol] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
+/* ÍNDICE: ixUsuariosRol */
 CREATE NONCLUSTERED INDEX [ixUsuariosRol] ON [dbo].[usuarios]
 (
 	[rolId] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)
 GO
+/* =========================================================
+   5. RESTRICCIONES, VALORES POR DEFECTO Y RELACIONES
+   ========================================================= */
+
 ALTER TABLE [dbo].[actividad] ADD  CONSTRAINT [dfActividadCreatedAt]  DEFAULT (sysdatetime()) FOR [createdAt]
 GO
 ALTER TABLE [dbo].[auditoriaReservas] ADD  CONSTRAINT [dfAuditoriaCreadoEn]  DEFAULT (sysdatetime()) FOR [creadoEn]
@@ -885,14 +807,13 @@ ALTER TABLE [dbo].[usuarios]  WITH CHECK ADD  CONSTRAINT [ckUsuariosEstado] CHEC
 GO
 ALTER TABLE [dbo].[usuarios] CHECK CONSTRAINT [ckUsuariosEstado]
 GO
-/****** Objeto: StoredProcedure [dbo].[paEspacioActualizar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paEspacioActualizar */
 -- ACTUALIZAR
-CREATE   PROCEDURE [dbo].[paEspacioActualizar]
+/* =========================================================
+   6. PROCEDIMIENTOS ALMACENADOS
+   ========================================================= */
+
+CREATE PROCEDURE [dbo].[paEspacioActualizar]
     @pId INT,
     @pNombre NVARCHAR(120),
     @pDescripcion NVARCHAR(MAX) = NULL,
@@ -993,14 +914,9 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paEspacioBuscarPorId] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paEspacioBuscarPorId */
 --BUSCAR POR ID 
-CREATE   PROCEDURE [dbo].[paEspacioBuscarPorId]
+CREATE PROCEDURE [dbo].[paEspacioBuscarPorId]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -1043,14 +959,9 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paEspacioEliminar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paEspacioEliminar */
 --ELIMINAR 
-CREATE   PROCEDURE [dbo].[paEspacioEliminar]
+CREATE PROCEDURE [dbo].[paEspacioEliminar]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -1095,14 +1006,9 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paEspacioFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paEspacioFiltrar */
 -- FILTRAR / LISTAR 
-CREATE   PROCEDURE [dbo].[paEspacioFiltrar]
+CREATE PROCEDURE [dbo].[paEspacioFiltrar]
     @pNombre NVARCHAR(120) = NULL,
     @pUbicacion NVARCHAR(160) = NULL,
     @pEstado NVARCHAR(20) = NULL,
@@ -1165,14 +1071,9 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paEspacioInsertar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paEspacioInsertar */
 --INSERTAR 
-CREATE   PROCEDURE [dbo].[paEspacioInsertar]
+CREATE PROCEDURE [dbo].[paEspacioInsertar]
     @pNombre NVARCHAR(120),
     @pDescripcion NVARCHAR(MAX) = NULL,
     @pUbicacion NVARCHAR(160),
@@ -1276,18 +1177,12 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paPagoActualizar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paPagoActualizar
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paPagoActualizar]
+CREATE PROCEDURE [dbo].[paPagoActualizar]
     @pId INT,
     @pReservaId INT,
     @pMonto DECIMAL(12,2),
@@ -1450,12 +1345,7 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paPagoBuscarPorId] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paPagoBuscarPorId */
 CREATE PROCEDURE [dbo].[paPagoBuscarPorId]
     @pId INT,
     @pResultado TINYINT OUTPUT,
@@ -1543,18 +1433,12 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paPagoEliminar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paPagoEliminar
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paPagoEliminar]
+CREATE PROCEDURE [dbo].[paPagoEliminar]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -1603,12 +1487,7 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paPagoFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paPagoFiltrar */
 CREATE PROCEDURE [dbo].[paPagoFiltrar]
     @pReservaId INT = NULL,
     @pCodigoReserva NVARCHAR(20) = NULL,
@@ -1768,11 +1647,6 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paPagoInsertar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
 /* =========================================================
    PROCEDIMIENTO: paPagoInsertar
@@ -1780,7 +1654,7 @@ GO
    Inserta un nuevo pago asociado a una reserva.
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paPagoInsertar]
+CREATE PROCEDURE [dbo].[paPagoInsertar]
     @pReservaId INT,
     @pMonto DECIMAL(12,2),
     @pMetodo NVARCHAR(30),
@@ -1950,15 +1824,9 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paPerfilActualizar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paPerfilActualizar */
 --ACTUALIZAR PERFIL
-CREATE   PROCEDURE [dbo].[paPerfilActualizar]
+CREATE PROCEDURE [dbo].[paPerfilActualizar]
     @pIdPerfil INT,
     @pUsuarioId INT = NULL,
     @pNombre NVARCHAR(MAX),
@@ -2141,16 +2009,10 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paPerfilBuscarPorId] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paPerfilBuscarPorId */
 -- BUSCAR PERFIL POR ID
  
-CREATE   PROCEDURE [dbo].[paPerfilBuscarPorId]
+CREATE PROCEDURE [dbo].[paPerfilBuscarPorId]
     @pIdPerfil INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -2199,15 +2061,9 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paPerfilEliminar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paPerfilEliminar */
 --ELIMINAR PERFIL
-CREATE   PROCEDURE [dbo].[paPerfilEliminar]
+CREATE PROCEDURE [dbo].[paPerfilEliminar]
     @pIdPerfil INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -2270,16 +2126,10 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paPerfilFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paPerfilFiltrar */
 --FILTRAR PERFILES
 
-CREATE   PROCEDURE [dbo].[paPerfilFiltrar]
+CREATE PROCEDURE [dbo].[paPerfilFiltrar]
     @pNombre NVARCHAR(160) = NULL,
     @pIdentificacion NVARCHAR(30) = NULL,
     @pCorreoContacto NVARCHAR(160) = NULL,
@@ -2351,16 +2201,10 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paPerfilInsertar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paPerfilInsertar */
   -- INSERTAR PERFIL
  
-CREATE   PROCEDURE [dbo].[paPerfilInsertar]
+CREATE PROCEDURE [dbo].[paPerfilInsertar]
     @pUsuarioId INT = NULL,
     @pNombre NVARCHAR(MAX),
     @pIdentificacion NVARCHAR(MAX) = NULL,
@@ -2539,13 +2383,8 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paReservaActualizar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE   PROCEDURE [dbo].[paReservaActualizar]
+/* PROCEDIMIENTO: paReservaActualizar */
+CREATE PROCEDURE [dbo].[paReservaActualizar]
     @pId INT,
     @pCodigo NVARCHAR(20),
     @pEspacioId INT,
@@ -2744,13 +2583,8 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paReservaBuscarPorId] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE   PROCEDURE [dbo].[paReservaBuscarPorId]
+/* PROCEDIMIENTO: paReservaBuscarPorId */
+CREATE PROCEDURE [dbo].[paReservaBuscarPorId]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -2799,13 +2633,8 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paReservaEliminar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE   PROCEDURE [dbo].[paReservaEliminar]
+/* PROCEDIMIENTO: paReservaEliminar */
+CREATE PROCEDURE [dbo].[paReservaEliminar]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -2855,13 +2684,8 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paReservaFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE   PROCEDURE [dbo].[paReservaFiltrar]
+/* PROCEDIMIENTO: paReservaFiltrar */
+CREATE PROCEDURE [dbo].[paReservaFiltrar]
     @pCodigo NVARCHAR(20) = NULL,
     @pResponsable NVARCHAR(160) = NULL,
     @pEstado NVARCHAR(20) = NULL,
@@ -2937,18 +2761,13 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paReservaInsertar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/* PROCEDIMIENTO: paReservaInsertar */
 /* ============================================================
    PROCEDIMIENTOS ALMACENADOS - TABLA: reservas
    CRUD + búsqueda + filtrado
    ============================================================ */
 
-CREATE   PROCEDURE [dbo].[paReservaInsertar]
+CREATE PROCEDURE [dbo].[paReservaInsertar]
     @pCodigo NVARCHAR(20),
     @pEspacioId INT,
     @pSolicitantePerfilId INT,
@@ -3127,19 +2946,13 @@ BEGIN
 END;
 
 GO
-/****** Objeto: StoredProcedure [dbo].[paRolFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paRolFiltrar
    Lista los roles disponibles
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paRolFiltrar]
+CREATE PROCEDURE [dbo].[paRolFiltrar]
     @pNombre NVARCHAR(100) = NULL,
     @pDescripcion NVARCHAR(250) = NULL,
     @pResultado TINYINT OUTPUT,
@@ -3209,20 +3022,14 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioActualizar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-
+/* PROCEDIMIENTO: paUsuarioActualizar */
 /* =========================================================
    ACTUALIZAR USUARIO
    La contraseña puede venir NULL.
    Si viene NULL conserva la contraseña anterior.
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paUsuarioActualizar]
+CREATE PROCEDURE [dbo].[paUsuarioActualizar]
     @pId INT,
     @pRolId INT,
     @pEmail NVARCHAR(160),
@@ -3411,18 +3218,12 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioBuscarPorId] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paUsuarioBuscarPorId
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paUsuarioBuscarPorId]
+CREATE PROCEDURE [dbo].[paUsuarioBuscarPorId]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -3487,18 +3288,12 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioEliminar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paUsuarioEliminar
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paUsuarioEliminar]
+CREATE PROCEDURE [dbo].[paUsuarioEliminar]
     @pId INT,
     @pResultado TINYINT OUTPUT,
     @pMensaje NVARCHAR(250) OUTPUT
@@ -3627,18 +3422,13 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioFiltrar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
 /* =========================================================
    PROCEDIMIENTO: paUsuarioFiltrar
    Lista y filtra los usuarios del sistema
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paUsuarioFiltrar]
+CREATE PROCEDURE [dbo].[paUsuarioFiltrar]
     @pEmail NVARCHAR(160) = NULL,
     @pRolId INT = NULL,
     @pEstado NVARCHAR(10) = NULL,
@@ -3745,19 +3535,13 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioInsertar] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 
 /* =========================================================
    PROCEDIMIENTO: paUsuarioInsertar
    Crea un nuevo usuario
 ========================================================= */
 
-CREATE   PROCEDURE [dbo].[paUsuarioInsertar]
+CREATE PROCEDURE [dbo].[paUsuarioInsertar]
     @pRolId INT,
     @pEmail NVARCHAR(160),
     @pPasswordHash NVARCHAR(255),
@@ -3907,13 +3691,8 @@ BEGIN
     END CATCH;
 END;
 GO
-/****** Objeto: StoredProcedure [dbo].[paUsuarioLogin] Fecha de script: 24/09/2026 09:13:58 a. m. ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE   PROCEDURE [dbo].[paUsuarioLogin]
+/* PROCEDIMIENTO: paUsuarioLogin */
+CREATE PROCEDURE [dbo].[paUsuarioLogin]
     @pEmail NVARCHAR(160)
 AS
 BEGIN
@@ -3934,7 +3713,7 @@ BEGIN
     WHERE u.email = @pEmail;
 END;
 GO
-/****** Procedimiento: estado de salud de la base de datos ******/
+/* Procedimiento: estado de salud de la base de datos */
 CREATE PROCEDURE [dbo].[paSistemaEstado]
 AS
 BEGIN
@@ -3946,7 +3725,7 @@ BEGIN
     FROM dbo.espacios;
 END;
 GO
-/****** Procedimiento: registrar eventos de autenticación ******/
+/* Procedimiento: registrar eventos de autenticación */
 CREATE PROCEDURE [dbo].[paAuditoriaAccesoRegistrar]
     @pUsuarioId INT = NULL,
     @pEvento NVARCHAR(20),
@@ -3962,7 +3741,7 @@ BEGIN
         (@pUsuarioId, @pEvento, @pDireccionIp, @pAgenteUsuario, SYSDATETIME());
 END;
 GO
-/****** Procedimiento: resumen de auditoría ******/
+/* Procedimiento: resumen de auditoría */
 CREATE PROCEDURE [dbo].[paAuditoriaResumen]
 AS
 BEGIN
@@ -3974,7 +3753,7 @@ BEGIN
 END;
 GO
 
-/****** Procedimiento: historial detallado de auditoría ******/
+/* Procedimiento: historial detallado de auditoría */
 CREATE PROCEDURE [dbo].[paAuditoriaDetalle]
 AS
 BEGIN
@@ -4106,7 +3885,7 @@ BEGIN
         eventos.idAuditoria DESC;
 END;
 GO
-/****** Procedimientos: catálogo de respaldos creados por la aplicación ******/
+/* Procedimientos: catálogo de respaldos creados por la aplicación */
 CREATE PROCEDURE [dbo].[paRespaldoListar]
 AS
 BEGIN
@@ -4138,7 +3917,7 @@ BEGIN
         VALUES (@pNombreArchivo, @pUsuarioId, @pCreadoEn, @pBytes);
 END;
 GO
-/****** Procedimiento: crear respaldo completo de reservasScouts ******/
+/* Procedimiento: crear respaldo completo de reservasScouts */
 CREATE PROCEDURE [dbo].[paRespaldoCompleto]
     @pRuta NVARCHAR(4000)
 AS
@@ -4169,7 +3948,7 @@ ON OBJECT::dbo.paRespaldoCompleto
 TO [reservas_maintenance];
 GO
 
-/****** Procedimiento: opciones mínimas de perfil para crear reservas ******/
+/* Procedimiento: opciones mínimas de perfil para crear reservas */
 CREATE PROCEDURE [dbo].[paPerfilOpcionesReserva]
     @pUsuarioId INT = NULL
 AS
@@ -4181,7 +3960,11 @@ BEGIN
     ORDER BY nombre;
 END;
 GO
-/****** Trigger: auditoría de cambios en espacios ******/
+/* Trigger: auditoría de cambios en espacios */
+/* =========================================================
+   7. TRIGGERS DE AUDITORÍA
+   ========================================================= */
+
 CREATE TRIGGER [dbo].[trgEspaciosAuditoria]
 ON [dbo].[espacios]
 AFTER INSERT, UPDATE, DELETE
@@ -4221,7 +4004,7 @@ BEGIN
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
 GO
-/****** Trigger: auditoría de cambios en perfiles ******/
+/* Trigger: auditoría de cambios en perfiles */
 CREATE TRIGGER [dbo].[trgPerfilesUsuarioAuditoria]
 ON [dbo].[perfilesUsuario]
 AFTER INSERT, UPDATE, DELETE
@@ -4261,7 +4044,7 @@ BEGIN
     FULL OUTER JOIN deleted AS d ON d.idPerfil = i.idPerfil;
 END;
 GO
-/****** Trigger: auditoría de cambios en usuarios (sin credenciales ni correo) ******/
+/* Trigger: auditoría de cambios en usuarios (sin credenciales ni correo) */
 CREATE TRIGGER [dbo].[trgUsuariosAuditoria]
 ON [dbo].[usuarios]
 AFTER INSERT, UPDATE, DELETE
@@ -4301,7 +4084,7 @@ BEGIN
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
 GO
-/****** Trigger: auditoría de cambios en reservas (sin datos de contacto) ******/
+/* Trigger: auditoría de cambios en reservas (sin datos de contacto) */
 CREATE TRIGGER [dbo].[trgReservasAuditoria]
 ON [dbo].[reservas]
 AFTER INSERT, UPDATE, DELETE
@@ -4343,7 +4126,7 @@ BEGIN
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
 GO
-/****** Trigger: auditoría de cambios en pagos ******/
+/* Trigger: auditoría de cambios en pagos */
 CREATE TRIGGER [dbo].[trgPagosAuditoria]
 ON [dbo].[pagos]
 AFTER INSERT, UPDATE, DELETE
@@ -4429,7 +4212,7 @@ BEGIN
 END;
 GO
 /* =========================================================
-   DATOS INICIALES PARA PRUEBAS DEL SISTEMA
+   8. DATOS INICIALES PARA PRUEBAS DEL SISTEMA
    ========================================================= */
 
 /* ---------------------------------------------------------
@@ -4790,11 +4573,14 @@ END;
 GO
 
 
+/* =========================================================
+   9. RESTAURACIÓN DE LA BASE DE DATOS
+   ========================================================= */
 
 USE [master]
 GO
 
-/****** Procedimiento: restaurar la base reservasScouts ******/
+/* Procedimiento: restaurar la base reservasScouts */
 CREATE OR ALTER PROCEDURE [dbo].[paRestaurarReservasScouts]
     @pRuta NVARCHAR(4000)
 AS
