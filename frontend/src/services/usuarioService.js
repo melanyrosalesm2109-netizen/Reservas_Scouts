@@ -1,7 +1,7 @@
-import { apiFetch as fetch } from "./api";
+﻿import { apiFetch as fetch } from "./api";
 
 const API_URL =
-  "http://localhost:8080/api/usuarios";
+  `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/usuarios`;
 
 async function procesarRespuesta(response) {
 

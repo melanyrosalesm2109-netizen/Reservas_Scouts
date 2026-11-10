@@ -1,7 +1,7 @@
-import { apiFetch as fetch } from "./api";
+﻿import { apiFetch as fetch } from "./api";
 
 const API_URL =
-  "http://localhost:8080/api/espacios";
+  `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/espacios`;
 
 async function procesarRespuesta(response) {
   const data = await response.json().catch(() => null);

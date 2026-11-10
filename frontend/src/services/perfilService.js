@@ -1,7 +1,7 @@
-import { apiFetch as fetch } from "./api";
+﻿import { apiFetch as fetch } from "./api";
 
 const API_URL =
-  "http://localhost:8080/api/perfiles";
+  `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/perfiles`;
 const API_OPCIONES_RESERVA = `${API_URL}/opciones-reserva`;
 
 async function procesarRespuesta(response) {

@@ -1,6 +1,6 @@
-import { apiFetch } from "./api";
+﻿import { apiFetch } from "./api";
 
-const API_URL = "http://localhost:8080/api/usuarios";
+const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/usuarios`;
 
 async function mensajeError(response) {
   const data = await response.json().catch(() => null);
@@ -46,3 +46,4 @@ export async function cerrarSesion() {
     );
   }
 }
+
