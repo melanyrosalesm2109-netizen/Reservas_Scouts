@@ -6,6 +6,7 @@ import com.reservasscouts.backend.model.ReservaResumen;
 import com.reservasscouts.backend.repository.ReservaRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,12 +15,18 @@ import java.util.List;
 public class ReservaService {
 
     private final ReservaRepository repository;
+    private final AuditoriaContextoService auditoriaContexto;
+
 
     public ReservaService(
-            ReservaRepository repository
+            ReservaRepository repository,
+            AuditoriaContextoService auditoriaContexto
     ) {
+
         this.repository = repository;
+        this.auditoriaContexto = auditoriaContexto;
     }
+
 
     public List<ReservaResumen> filtrar(
             String codigo,
@@ -44,6 +51,7 @@ public class ReservaService {
         );
     }
 
+
     public Reserva buscarPorId(
             Integer id
     ) {
@@ -51,17 +59,23 @@ public class ReservaService {
         return repository.buscarPorId(id);
     }
 
+
+    @Transactional
     public Reserva insertar(
             ReservaRequest request
     ) {
 
         validarFechas(request);
 
-        return repository.insertar(
-                request
+        return auditoriaContexto.ejecutar(
+                () -> repository.insertar(
+                        request
+                )
         );
     }
 
+
+    @Transactional
     public Reserva actualizar(
             Integer id,
             ReservaRequest request
@@ -69,27 +83,36 @@ public class ReservaService {
 
         validarFechas(request);
 
-        return repository.actualizar(
-                id,
-                request
+        return auditoriaContexto.ejecutar(
+                () -> repository.actualizar(
+                        id,
+                        request
+                )
         );
     }
 
+
+    @Transactional
     public void eliminar(
             Integer id
     ) {
 
-        repository.eliminar(id);
+        auditoriaContexto.ejecutar(
+                () -> repository.eliminar(id)
+        );
     }
+
 
     private void validarFechas(
             ReservaRequest request
     ) {
 
-        if (!request.fechaFin()
-                .isAfter(
-                        request.fechaInicio()
-                )) {
+        if (
+                !request.fechaFin()
+                        .isAfter(
+                                request.fechaInicio()
+                        )
+        ) {
 
             throw new IllegalArgumentException(
                     "La fecha final debe ser mayor que la fecha inicial."

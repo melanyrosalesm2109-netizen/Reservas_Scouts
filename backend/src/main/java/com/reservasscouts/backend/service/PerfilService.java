@@ -5,6 +5,7 @@ import com.reservasscouts.backend.model.Perfil;
 import com.reservasscouts.backend.repository.PerfilRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -12,12 +13,18 @@ import java.util.List;
 public class PerfilService {
 
     private final PerfilRepository repository;
+    private final AuditoriaContextoService auditoriaContexto;
+
 
     public PerfilService(
-            PerfilRepository repository
+            PerfilRepository repository,
+            AuditoriaContextoService auditoriaContexto
     ) {
+
         this.repository = repository;
+        this.auditoriaContexto = auditoriaContexto;
     }
+
 
     public List<Perfil> filtrar(
             String nombre,
@@ -36,6 +43,7 @@ public class PerfilService {
         );
     }
 
+
     public Perfil buscarPorId(
             Integer idPerfil
     ) {
@@ -45,32 +53,44 @@ public class PerfilService {
         );
     }
 
+
+    @Transactional
     public Perfil insertar(
             PerfilRequest request
     ) {
 
-        return repository.insertar(
-                request
+        return auditoriaContexto.ejecutar(
+                () -> repository.insertar(
+                        request
+                )
         );
     }
 
+
+    @Transactional
     public Perfil actualizar(
             Integer idPerfil,
             PerfilRequest request
     ) {
 
-        return repository.actualizar(
-                idPerfil,
-                request
+        return auditoriaContexto.ejecutar(
+                () -> repository.actualizar(
+                        idPerfil,
+                        request
+                )
         );
     }
 
+
+    @Transactional
     public void eliminar(
             Integer idPerfil
     ) {
 
-        repository.eliminar(
-                idPerfil
+        auditoriaContexto.ejecutar(
+                () -> repository.eliminar(
+                        idPerfil
+                )
         );
     }
 }
