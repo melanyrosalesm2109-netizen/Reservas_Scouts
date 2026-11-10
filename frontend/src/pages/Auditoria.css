@@ -916,3 +916,305 @@
       1fr;
   }
 }
+
+/* =====================================================
+   RESPONSIVE FINAL - AUDITORÍA
+   ===================================================== */
+
+@media (max-width: 720px) {
+
+  .audit-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+
+  .audit-heading {
+    gap: 14px;
+
+    margin-bottom: 18px;
+  }
+
+
+  .audit-heading h1 {
+    font-size: 29px;
+  }
+
+
+  .audit-heading p {
+    font-size: 13px;
+
+    line-height: 1.4;
+  }
+
+
+  .audit-refresh {
+    width: 100%;
+  }
+
+
+  .audit-stats {
+    grid-template-columns:
+      1fr 1fr;
+
+    gap: 9px;
+  }
+
+
+  .audit-stat {
+    min-height: 82px;
+
+    padding: 12px;
+
+    gap: 10px;
+  }
+
+
+  .audit-stat-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+
+  .audit-stat span {
+    font-size: 10px;
+  }
+
+
+  .audit-stat strong {
+    font-size: 21px;
+  }
+
+
+  .audit-last-date {
+    font-size: 11px !important;
+  }
+
+
+  .audit-panel {
+    width: 100%;
+  }
+
+
+  .audit-panel-heading {
+    padding:
+      17px 15px 12px;
+  }
+
+
+  .audit-panel-heading h2 {
+    font-size: 19px;
+  }
+
+
+  .audit-filters {
+    grid-template-columns:
+      1fr;
+
+    padding:
+      0 15px 15px;
+  }
+
+
+  .audit-search,
+  .audit-filters select,
+  .audit-filters input[type="date"],
+  .audit-clear {
+    width: 100%;
+  }
+
+
+  /*
+     En móvil convertimos cada fila de la tabla
+     en una tarjeta legible.
+  */
+
+  .audit-table-wrap {
+    overflow: visible;
+  }
+
+
+  .audit-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+
+  .audit-table thead {
+    display: none;
+  }
+
+
+  .audit-table,
+  .audit-table tbody {
+    display: block;
+  }
+
+
+  .audit-table tbody tr {
+    display: block;
+
+    margin: 10px;
+
+    padding: 13px;
+
+    border: 1px solid #e1e7ea;
+    border-radius: 12px;
+
+    background: white;
+
+    box-shadow:
+      0 5px 15px
+      rgba(23, 49, 65, 0.05);
+  }
+
+
+  .audit-table td {
+    display: grid;
+
+    grid-template-columns:
+      100px 1fr;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 7px 0;
+
+    border: 0;
+
+    font-size: 12px;
+  }
+
+
+  .audit-table td::before {
+    color: #82919a;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+  }
+
+
+  .audit-table td:nth-child(1)::before {
+    content: "Fecha";
+  }
+
+
+  .audit-table td:nth-child(2)::before {
+    content: "Módulo";
+  }
+
+
+  .audit-table td:nth-child(3)::before {
+    content: "Evento";
+  }
+
+
+  .audit-table td:nth-child(4)::before {
+    content: "Usuario";
+  }
+
+
+  .audit-table td:nth-child(5)::before {
+    content: "Registro";
+  }
+
+
+  .audit-table td:nth-child(6)::before {
+    content: "Detalle";
+  }
+
+
+  .audit-date {
+    white-space: normal;
+  }
+
+
+  .audit-detail-button {
+    width: fit-content;
+  }
+
+
+  .audit-modal-backdrop {
+    padding: 8px;
+  }
+
+
+  .audit-modal {
+    width: 100%;
+
+    max-height: 95vh;
+
+    border-radius: 13px;
+  }
+
+
+  .audit-modal-heading {
+    padding: 16px;
+  }
+
+
+  .audit-modal-heading h2 {
+    font-size: 22px;
+  }
+
+
+  .audit-modal-info {
+    grid-template-columns:
+      1fr;
+
+    padding: 14px 16px;
+  }
+
+
+  .audit-readable-detail {
+    margin:
+      0 16px 18px;
+  }
+
+
+  .audit-change-values {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .audit-change-arrow {
+    transform: rotate(90deg);
+  }
+
+
+  .audit-data-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .audit-access-detail {
+    margin:
+      0 16px 18px;
+  }
+
+
+  .audit-access-grid {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+
+@media (max-width: 420px) {
+
+  .audit-stats {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .audit-table td {
+    grid-template-columns:
+      82px 1fr;
+  }
+}

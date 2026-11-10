@@ -11,6 +11,7 @@
 .sidebar {
   width: 270px;
   min-height: 100vh;
+
   position: fixed;
   left: 0;
   top: 0;
@@ -37,6 +38,7 @@
   z-index: 100;
 }
 
+
 /* MARCA */
 
 .brand {
@@ -55,6 +57,8 @@
   align-items: center;
   justify-content: center;
 
+  flex-shrink: 0;
+
   color: #102f45;
   background: #d4ad68;
 
@@ -65,9 +69,10 @@
 }
 
 .brand h2 {
+  margin: 0;
+
   font-family: Georgia, serif;
   font-size: 22px;
-  margin: 0;
   line-height: 1;
 }
 
@@ -76,21 +81,25 @@
 
   margin-top: 5px;
 
+  color: #d4ad68;
+
   font-size: 10px;
   letter-spacing: 4px;
-
-  color: #d4ad68;
 }
+
+
+/* ETIQUETA MENÚ */
 
 .menu-label {
   margin: 0 11px 13px;
 
-  font-size: 10px;
-  letter-spacing: 1.5px;
-
   color:
     rgba(255, 255, 255, 0.42);
+
+  font-size: 10px;
+  letter-spacing: 1.5px;
 }
+
 
 /* LINKS */
 
@@ -109,19 +118,19 @@
   align-items: center;
   gap: 13px;
 
-  border-radius: 10px;
+  position: relative;
 
-  text-decoration: none;
+  border-radius: 10px;
 
   color:
     rgba(255, 255, 255, 0.74);
+
+  text-decoration: none;
 
   font-size: 14px;
   font-weight: 500;
 
   transition: 0.2s ease;
-
-  position: relative;
 }
 
 .sidebar-menu a:hover {
@@ -130,19 +139,18 @@
 
   color: white;
 
-  transform:
-    translateX(3px);
+  transform: translateX(3px);
 }
 
 .sidebar-menu a.active {
-  color: white;
-
   background:
     linear-gradient(
       90deg,
       rgba(212, 173, 104, 0.23),
       rgba(212, 173, 104, 0.08)
     );
+
+  color: white;
 
   box-shadow:
     inset 3px 0 0 #d4ad68;
@@ -152,13 +160,14 @@
   color: #e1bd7f;
 }
 
+
 /* PARTE INFERIOR */
 
 .sidebar-bottom {
+  padding-top: 20px;
+
   border-top:
     1px solid rgba(255, 255, 255, 0.1);
-
-  padding-top: 20px;
 }
 
 .user-card {
@@ -177,99 +186,15 @@
   align-items: center;
   justify-content: center;
 
+  flex-shrink: 0;
+
   border-radius: 50%;
 
   background: #d4ad68;
-
   color: #0b2233;
 
   font-weight: bold;
 }
-
-.user-card strong {
-  display: block;
-  font-size: 13px;
-}
-
-.user-card span {
-  display: block;
-
-  margin-top: 3px;
-
-  font-size: 11px;
-
-  color:
-    rgba(255, 255, 255, 0.5);
-}
-
-.logout-button {
-  width: 100%;
-  height: 44px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.13);
-
-  border-radius: 9px;
-
-  color:
-    rgba(255, 255, 255, 0.8);
-
-  background:
-    rgba(255, 255, 255, 0.04);
-
-  cursor: pointer;
-}
-
-.logout-button:hover {
-  background: #9c4141;
-  border-color: #9c4141;
-  color: white;
-}
-
-/* ======================
-   CONTENIDO
-====================== */
-
-.main-content {
-  margin-left: 270px;
-
-  width:
-    calc(100% - 270px);
-
-  min-height: 100vh;
-
-  padding: 38px 42px;
-
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(212, 173, 104, 0.1),
-      transparent 28%
-    ),
-    #f5f3ee;
-}
-
-@media (max-width: 900px) {
-  .sidebar {
-    width: 220px;
-  }
-
-  .main-content {
-    margin-left: 220px;
-    width: calc(100% - 220px);
-    padding: 25px;
-  }
-
-  .brand h2 {
-    font-size: 18px;
-  }
-}
-
 
 .user-info-session {
   min-width: 0;
@@ -294,10 +219,286 @@
   overflow: hidden;
 
   white-space: nowrap;
-
   text-overflow: ellipsis;
 
-  color: rgba(255, 255, 255, 0.62);
+  color:
+    rgba(255, 255, 255, 0.62);
 
   font-size: 10px;
+}
+
+.logout-button {
+  width: 100%;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.13);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #9c4141;
+
+  border-color: #9c4141;
+
+  color: white;
+}
+
+
+/* ======================
+   CONTENIDO
+====================== */
+
+.main-content {
+  width: calc(100% - 270px);
+
+  min-width: 0;
+  min-height: 100vh;
+
+  margin-left: 270px;
+
+  padding: 38px 42px;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(212, 173, 104, 0.1),
+      transparent 28%
+    ),
+    #f5f3ee;
+}
+
+
+/* ======================
+   TABLET
+====================== */
+
+@media (max-width: 1100px) {
+
+  .sidebar {
+    width: 220px;
+
+    padding:
+      25px 16px 20px;
+  }
+
+  .main-content {
+    width:
+      calc(100% - 220px);
+
+    margin-left: 220px;
+
+    padding: 26px 22px;
+  }
+
+  .brand h2 {
+    font-size: 18px;
+  }
+}
+
+
+/* ======================
+   TELÉFONO
+====================== */
+
+@media (max-width: 720px) {
+
+  .main-layout {
+    display: block;
+  }
+
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+
+    position: relative;
+
+    padding: 15px 14px 12px;
+
+    box-shadow:
+      0 4px 18px
+      rgba(7, 27, 40, 0.16);
+  }
+
+
+  .sidebar > div:first-child {
+    width: 100%;
+  }
+
+
+  .brand {
+    margin-bottom: 13px;
+
+    gap: 10px;
+  }
+
+
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+
+    border-radius: 10px;
+  }
+
+
+  .brand h2 {
+    font-size: 19px;
+  }
+
+
+  .brand span {
+    margin-top: 3px;
+
+    font-size: 8px;
+    letter-spacing: 3px;
+  }
+
+
+  .menu-label {
+    display: none;
+  }
+
+
+  .sidebar-menu {
+    width: 100%;
+
+    display: flex;
+    flex-direction: row;
+
+    gap: 7px;
+
+    padding-bottom: 5px;
+
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+  }
+
+
+  .sidebar-menu a {
+    min-width: max-content;
+    min-height: 40px;
+
+    flex: 0 0 auto;
+
+    padding: 0 11px;
+
+    gap: 7px;
+
+    font-size: 12px;
+  }
+
+
+  .sidebar-menu a:hover {
+    transform: none;
+  }
+
+
+  .sidebar-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-top: 10px;
+
+    padding-top: 10px;
+  }
+
+
+  .user-card {
+    min-width: 0;
+
+    margin: 0;
+  }
+
+
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+
+  .user-info-session strong {
+    font-size: 11px;
+  }
+
+
+  .user-info-session span {
+    max-width: 135px;
+
+    font-size: 9px;
+  }
+
+
+  .logout-button {
+    width: auto;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    padding: 0 12px;
+
+    font-size: 11px;
+  }
+
+
+  .main-content {
+    width: 100%;
+
+    margin-left: 0;
+
+    padding: 20px 14px 30px;
+  }
+}
+
+
+/* ======================
+   TELÉFONOS PEQUEÑOS
+====================== */
+
+@media (max-width: 420px) {
+
+  .main-content {
+    padding:
+      18px 10px 28px;
+  }
+
+
+  .sidebar {
+    padding:
+      13px 10px 10px;
+  }
+
+
+  .logout-button {
+    padding:
+      0 9px;
+  }
+
+
+  .logout-button svg {
+    width: 15px;
+  }
+
+
+  .user-info-session span {
+    max-width: 105px;
+  }
 }
