@@ -16,11 +16,18 @@ import {
   obtenerResumenAuditoria,
 } from "../services/auditoriaService";
 
+import { listarPerfiles } from "../services/perfilService";
+import { listarEspacios } from "../services/espacioService";
+import {
+  listarUsuarios,
+  listarRoles,
+} from "../services/usuarioService";
+import { listarReservas } from "../services/reservaService";
+
 import "./Auditoria.css";
 
 
 function Auditoria() {
-
   const [resumen, setResumen] = useState([]);
   const [eventos, setEventos] = useState([]);
 
@@ -35,23 +42,64 @@ function Auditoria() {
 
   const [seleccionado, setSeleccionado] = useState(null);
 
+  const [catalogos, setCatalogos] = useState({
+    perfiles: {},
+    espacios: {},
+    usuarios: {},
+    reservas: {},
+    roles: {},
+  });
+
 
   // =====================================================
-  // CARGAR AUDITORÍA
+  // CARGAR AUDITORÍA Y CATÁLOGOS
   // =====================================================
 
   const cargarAuditoria = async () => {
-
     setCargando(true);
     setError("");
 
     try {
+      const obtenerSeguro = async (funcion) => {
+        try {
+          const datos = await funcion();
 
-      const [resumenData, detalleData] =
-        await Promise.all([
-          obtenerResumenAuditoria(),
-          obtenerDetalleAuditoria(),
-        ]);
+          if (Array.isArray(datos)) {
+            return datos;
+          }
+
+          if (Array.isArray(datos?.content)) {
+            return datos.content;
+          }
+
+          if (Array.isArray(datos?.items)) {
+            return datos.items;
+          }
+
+          return [];
+        } catch {
+          return [];
+        }
+      };
+
+
+      const [
+        resumenData,
+        detalleData,
+        perfilesData,
+        espaciosData,
+        usuariosData,
+        reservasData,
+        rolesData,
+      ] = await Promise.all([
+        obtenerResumenAuditoria(),
+        obtenerDetalleAuditoria(),
+        obtenerSeguro(() => listarPerfiles()),
+        obtenerSeguro(() => listarEspacios()),
+        obtenerSeguro(() => listarUsuarios()),
+        obtenerSeguro(() => listarReservas()),
+        obtenerSeguro(() => listarRoles()),
+      ]);
 
 
       setResumen(
@@ -60,40 +108,651 @@ function Auditoria() {
           : []
       );
 
-
       setEventos(
         Array.isArray(detalleData)
           ? detalleData
           : []
       );
 
-    } catch (err) {
 
+      const perfiles = {};
+
+      perfilesData.forEach((perfil) => {
+        const id =
+          perfil.idPerfil ??
+          perfil.id;
+
+        if (id != null) {
+          perfiles[String(id)] =
+            perfil.nombre ||
+            `Perfil #${id}`;
+        }
+      });
+
+
+      const espacios = {};
+
+      espaciosData.forEach((espacio) => {
+        const id = espacio.id;
+
+        if (id != null) {
+          espacios[String(id)] =
+            espacio.nombre ||
+            `Espacio #${id}`;
+        }
+      });
+
+
+      const usuarios = {};
+
+      usuariosData.forEach((usuario) => {
+        const id = usuario.id;
+
+        if (id != null) {
+          usuarios[String(id)] =
+            usuario.email ||
+            usuario.nombre ||
+            `Usuario #${id}`;
+        }
+      });
+
+
+      const reservas = {};
+
+      reservasData.forEach((reserva) => {
+        const id = reserva.id;
+
+        if (id != null) {
+          reservas[String(id)] =
+            reserva.codigo ||
+            `Reserva #${id}`;
+        }
+      });
+
+
+      const roles = {};
+
+      rolesData.forEach((rol) => {
+        const id = rol.id;
+
+        if (id != null) {
+          roles[String(id)] =
+            rol.nombre ||
+            `Rol #${id}`;
+        }
+      });
+
+
+      setCatalogos({
+        perfiles,
+        espacios,
+        usuarios,
+        reservas,
+        roles,
+      });
+
+    } catch (err) {
       setError(
         err.message ||
         "No se pudo cargar la auditoría."
       );
-
     } finally {
-
       setCargando(false);
     }
   };
 
 
   useEffect(() => {
-
     void cargarAuditoria();
-
   }, []);
 
 
   // =====================================================
-  // OPCIONES DE FILTRO
+  // NOMBRES AMIGABLES
+  // =====================================================
+
+  const nombreOrigen = (valor) => {
+    const nombres = {
+      reservas: "Reservas",
+      pagos: "Pagos",
+      usuarios: "Usuarios",
+      espacios: "Espacios",
+      perfilesUsuario: "Perfiles",
+      accesos: "Accesos",
+      auditoriaAccesos: "Accesos",
+    };
+
+    return (
+      nombres[valor] ||
+      valor ||
+      "Sin origen"
+    );
+  };
+
+
+  const nombreEvento = (valor) => {
+    const nombres = {
+      INSERT: "Creación",
+      UPDATE: "Modificación",
+      DELETE: "Eliminación",
+      LOGIN: "Inicio de sesión",
+      LOGOUT: "Cierre de sesión",
+      LOGIN_FALLIDO: "Inicio de sesión fallido",
+      BACKUP: "Respaldo",
+      RESTORE: "Restauración",
+    };
+
+    return (
+      nombres[valor] ||
+      valor ||
+      "Evento"
+    );
+  };
+
+
+  const nombreCampo = (campo) => {
+    const nombres = {
+      codigo: "Código",
+      espacioId: "Espacio",
+      solicitantePerfilId: "Solicitante",
+      creadoPorUsuarioId: "Creado por",
+      grupo: "Grupo",
+      responsable: "Responsable",
+      telefono: "Teléfono",
+      email: "Correo",
+      participantes: "Participantes",
+      tipoActividad: "Tipo de actividad",
+      fechaInicio: "Fecha y hora de inicio",
+      fechaFin: "Fecha y hora final",
+      estado: "Estado",
+      observaciones: "Observaciones",
+
+      nombre: "Nombre",
+      descripcion: "Descripción",
+      ubicacion: "Ubicación",
+      capacidad: "Capacidad",
+      costo: "Costo",
+
+      usuarioId: "Usuario",
+      identificacion: "Identificación",
+      correoContacto: "Correo de contacto",
+      tipoPerfil: "Tipo de perfil",
+      direccion: "Dirección",
+
+      rolId: "Rol",
+
+      pagoId: "Pago",
+      reservaId: "Reserva",
+      monto: "Monto",
+      metodo: "Método de pago",
+      fechaPago: "Fecha de pago",
+      comprobante: "Comprobante",
+      notas: "Notas",
+
+      direccionIp: "Dirección IP",
+      agenteUsuario: "Navegador / dispositivo",
+    };
+
+    return nombres[campo] || campo;
+  };
+
+
+  const claseEvento = (valor) => {
+    switch (valor) {
+      case "INSERT":
+        return "audit-badge audit-insert";
+
+      case "UPDATE":
+        return "audit-badge audit-update";
+
+      case "DELETE":
+        return "audit-badge audit-delete";
+
+      case "LOGIN":
+        return "audit-badge audit-login";
+
+      case "LOGIN_FALLIDO":
+        return "audit-badge audit-delete";
+
+      case "BACKUP":
+        return "audit-badge audit-backup";
+
+      case "RESTORE":
+        return "audit-badge audit-restore";
+
+      default:
+        return "audit-badge";
+    }
+  };
+
+
+  // =====================================================
+  // JSON / VALORES
+  // =====================================================
+
+  const parsearJson = (valor) => {
+    if (!valor) {
+      return null;
+    }
+
+    if (typeof valor === "object") {
+      return valor;
+    }
+
+    try {
+      return JSON.parse(valor);
+    } catch {
+      return null;
+    }
+  };
+
+
+  const camposOcultos = [
+    "createdAt",
+    "updatedAt",
+    "passwordHash",
+  ];
+
+
+  const formatearValor = (campo, valor) => {
+    if (
+      valor === null ||
+      valor === undefined ||
+      valor === ""
+    ) {
+      return "Sin dato";
+    }
+
+
+    // IDs convertidos a nombres reales
+
+    if (campo === "espacioId") {
+      return (
+        catalogos.espacios[String(valor)] ||
+        `Espacio #${valor}`
+      );
+    }
+
+
+    if (campo === "solicitantePerfilId") {
+      return (
+        catalogos.perfiles[String(valor)] ||
+        `Perfil #${valor}`
+      );
+    }
+
+
+    if (
+      campo === "creadoPorUsuarioId" ||
+      campo === "usuarioId"
+    ) {
+      return (
+        catalogos.usuarios[String(valor)] ||
+        `Usuario #${valor}`
+      );
+    }
+
+
+    if (campo === "reservaId") {
+      return (
+        catalogos.reservas[String(valor)] ||
+        `Reserva #${valor}`
+      );
+    }
+
+
+    if (campo === "rolId") {
+      return (
+        catalogos.roles[String(valor)] ||
+        `Rol #${valor}`
+      );
+    }
+
+
+    if (campo === "pagoId") {
+      return `Pago #${valor}`;
+    }
+
+
+    // Fechas
+
+    if (
+      campo === "fechaInicio" ||
+      campo === "fechaFin"
+    ) {
+      const fecha = new Date(valor);
+
+      if (!Number.isNaN(fecha.getTime())) {
+        return fecha.toLocaleString("es-CR");
+      }
+    }
+
+
+    if (campo === "fechaPago") {
+      const fecha =
+        new Date(`${valor}T00:00:00`);
+
+      if (!Number.isNaN(fecha.getTime())) {
+        return fecha.toLocaleDateString("es-CR");
+      }
+    }
+
+
+    // Dinero
+
+    if (
+      campo === "monto" ||
+      campo === "costo"
+    ) {
+      const numero = Number(valor);
+
+      if (!Number.isNaN(numero)) {
+        return new Intl.NumberFormat(
+          "es-CR",
+          {
+            style: "currency",
+            currency: "CRC",
+          }
+        ).format(numero);
+      }
+    }
+
+
+    // Estado
+
+    if (
+      campo === "estado" &&
+      typeof valor === "string"
+    ) {
+      return (
+        valor.charAt(0).toUpperCase() +
+        valor.slice(1).toLowerCase()
+      );
+    }
+
+
+    if (typeof valor === "boolean") {
+      return valor
+        ? "Sí"
+        : "No";
+    }
+
+
+    return String(valor);
+  };
+
+
+  // =====================================================
+  // INFORMACIÓN DE ACCESO
+  // =====================================================
+
+  const obtenerInfoAcceso = (detalle) => {
+    if (!detalle) {
+      return {
+        ip: "No disponible",
+        dispositivo: "No disponible",
+        navegador: "No disponible",
+      };
+    }
+
+
+    const ipMatch =
+      detalle.match(/IP:\s*([^|]+)/i);
+
+    const navegadorMatch =
+      detalle.match(/Navegador:\s*(.+)$/i);
+
+
+    const ipOriginal =
+      ipMatch?.[1]?.trim() || "";
+
+    const userAgent =
+      navegadorMatch?.[1]?.trim() || "";
+
+
+    let ip =
+      ipOriginal ||
+      "No disponible";
+
+
+    if (
+      ipOriginal === "0:0:0:0:0:0:0:1" ||
+      ipOriginal === "::1" ||
+      ipOriginal === "127.0.0.1"
+    ) {
+      ip = "Equipo local";
+    }
+
+
+    let dispositivo =
+      "Otro dispositivo";
+
+
+    if (/Windows/i.test(userAgent)) {
+      dispositivo =
+        "Computadora Windows";
+    } else if (/Android/i.test(userAgent)) {
+      dispositivo =
+        "Dispositivo Android";
+    } else if (/iPhone|iPad/i.test(userAgent)) {
+      dispositivo =
+        "iPhone / iPad";
+    } else if (/Macintosh|Mac OS/i.test(userAgent)) {
+      dispositivo =
+        "Computadora macOS";
+    }
+
+
+    let navegador =
+      "Otro navegador";
+
+
+    if (/Edg\//i.test(userAgent)) {
+      navegador =
+        "Microsoft Edge";
+    } else if (/Chrome\//i.test(userAgent)) {
+      navegador =
+        "Google Chrome";
+    } else if (/Firefox\//i.test(userAgent)) {
+      navegador =
+        "Mozilla Firefox";
+    } else if (/Safari\//i.test(userAgent)) {
+      navegador =
+        "Safari";
+    }
+
+
+    return {
+      ip,
+      dispositivo,
+      navegador,
+    };
+  };
+
+
+  // =====================================================
+  // DETALLE LEGIBLE DE CAMBIOS
+  // =====================================================
+
+  const obtenerDetalleLegible = (item) => {
+    if (!item) {
+      return null;
+    }
+
+
+    const detalle =
+      parsearJson(item.detalle);
+
+
+    const anteriores =
+      parsearJson(item.valoresAnteriores) ||
+      detalle?.antes ||
+      null;
+
+
+    const nuevos =
+      parsearJson(item.valoresNuevos) ||
+      detalle?.despues ||
+      null;
+
+
+    // MODIFICACIÓN
+
+    if (item.evento === "UPDATE") {
+      const campos = [
+        ...new Set([
+          ...Object.keys(anteriores || {}),
+          ...Object.keys(nuevos || {}),
+        ]),
+      ];
+
+
+      const cambios =
+        campos
+          .filter(
+            (campo) =>
+              !camposOcultos.includes(campo)
+          )
+          .filter((campo) => {
+            const antes =
+              anteriores?.[campo];
+
+            const despues =
+              nuevos?.[campo];
+
+            return (
+              JSON.stringify(antes) !==
+              JSON.stringify(despues)
+            );
+          })
+          .map((campo) => ({
+            campo,
+
+            nombre:
+              nombreCampo(campo),
+
+            antes:
+              formatearValor(
+                campo,
+                anteriores?.[campo]
+              ),
+
+            despues:
+              formatearValor(
+                campo,
+                nuevos?.[campo]
+              ),
+          }));
+
+
+      return {
+        tipo: "cambios",
+        titulo: "Cambios realizados",
+        cambios,
+      };
+    }
+
+
+    // CREACIÓN
+
+    if (item.evento === "INSERT") {
+      const datos =
+        nuevos ||
+        detalle?.despues ||
+        detalle ||
+        {};
+
+
+      return {
+        tipo: "datos",
+        titulo: "Información registrada",
+
+        datos:
+          Object.entries(datos)
+            .filter(
+              ([campo]) =>
+                !camposOcultos.includes(campo) &&
+                campo !== "antes" &&
+                campo !== "despues"
+            )
+            .map(
+              ([campo, valor]) => ({
+                campo,
+
+                nombre:
+                  nombreCampo(campo),
+
+                valor:
+                  formatearValor(
+                    campo,
+                    valor
+                  ),
+              })
+            ),
+      };
+    }
+
+
+    // ELIMINACIÓN
+
+    if (item.evento === "DELETE") {
+      const datos =
+        anteriores ||
+        detalle?.antes ||
+        detalle ||
+        {};
+
+
+      return {
+        tipo: "datos",
+        titulo: "Información eliminada",
+
+        datos:
+          Object.entries(datos)
+            .filter(
+              ([campo]) =>
+                !camposOcultos.includes(campo) &&
+                campo !== "antes" &&
+                campo !== "despues"
+            )
+            .map(
+              ([campo, valor]) => ({
+                campo,
+
+                nombre:
+                  nombreCampo(campo),
+
+                valor:
+                  formatearValor(
+                    campo,
+                    valor
+                  ),
+              })
+            ),
+      };
+    }
+
+
+    return null;
+  };
+
+
+  // NO usamos useMemo aquí porque depende
+  // también de los catálogos cargados.
+
+  const detalleSeleccionado =
+    seleccionado
+      ? obtenerDetalleLegible(
+          seleccionado
+        )
+      : null;
+
+
+  // =====================================================
+  // FILTROS
   // =====================================================
 
   const origenes = useMemo(() => {
-
     return [
       ...new Set(
         eventos
@@ -101,12 +760,10 @@ function Auditoria() {
           .filter(Boolean)
       ),
     ].sort();
-
   }, [eventos]);
 
 
   const tiposEvento = useMemo(() => {
-
     return [
       ...new Set(
         eventos
@@ -114,16 +771,10 @@ function Auditoria() {
           .filter(Boolean)
       ),
     ].sort();
-
   }, [eventos]);
 
 
-  // =====================================================
-  // FILTRAR EVENTOS
-  // =====================================================
-
   const eventosFiltrados = useMemo(() => {
-
     const texto =
       busqueda
         .trim()
@@ -131,7 +782,6 @@ function Auditoria() {
 
 
     return eventos.filter((item) => {
-
       const coincideOrigen =
         !origen ||
         item.origen === origen;
@@ -160,7 +810,9 @@ function Auditoria() {
         (
           fechaValida &&
           fecha >=
-          new Date(`${desde}T00:00:00`)
+          new Date(
+            `${desde}T00:00:00`
+          )
         );
 
 
@@ -169,19 +821,19 @@ function Auditoria() {
         (
           fechaValida &&
           fecha <=
-          new Date(`${hasta}T23:59:59`)
+          new Date(
+            `${hasta}T23:59:59`
+          )
         );
 
 
       const contenido = [
-
-        item.origen,
-        item.evento,
+        nombreOrigen(item.origen),
+        nombreEvento(item.evento),
         item.registroId,
         item.usuario,
         item.usuarioBd,
         item.detalle,
-
       ]
         .filter(
           (valor) =>
@@ -221,19 +873,18 @@ function Auditoria() {
   // =====================================================
 
   const totalEventos = useMemo(() => {
-
     return resumen.reduce(
       (total, item) =>
         total +
-        Number(item.totalEventos || 0),
+        Number(
+          item.totalEventos || 0
+        ),
       0
     );
-
   }, [resumen]);
 
 
   const cambiosDatos = useMemo(() => {
-
     return resumen
       .filter((item) =>
         [
@@ -245,15 +896,15 @@ function Auditoria() {
       .reduce(
         (total, item) =>
           total +
-          Number(item.totalEventos || 0),
+          Number(
+            item.totalEventos || 0
+          ),
         0
       );
-
   }, [resumen]);
 
 
   const eventosAcceso = useMemo(() => {
-
     return resumen
       .filter(
         (item) =>
@@ -263,20 +914,22 @@ function Auditoria() {
       .reduce(
         (total, item) =>
           total +
-          Number(item.totalEventos || 0),
+          Number(
+            item.totalEventos || 0
+          ),
         0
       );
-
   }, [resumen]);
 
 
   const ultimaActividad = useMemo(() => {
-
     const fechas =
       resumen
         .map(
           (item) =>
-            new Date(item.ultimoEvento)
+            new Date(
+              item.ultimoEvento
+            )
         )
         .filter(
           (fecha) =>
@@ -287,7 +940,6 @@ function Auditoria() {
 
 
     if (fechas.length === 0) {
-
       return "Sin actividad";
     }
 
@@ -306,16 +958,10 @@ function Auditoria() {
     return ultima.toLocaleString(
       "es-CR"
     );
-
   }, [resumen]);
 
 
-  // =====================================================
-  // UTILIDADES
-  // =====================================================
-
   const limpiarFiltros = () => {
-
     setBusqueda("");
     setOrigen("");
     setEvento("");
@@ -324,81 +970,27 @@ function Auditoria() {
   };
 
 
-  const nombreOrigen = (valor) => {
+  // =====================================================
+  // EVENTO SELECCIONADO
+  // =====================================================
 
-    const nombres = {
-
-      reservas: "Reservas",
-      pagos: "Pagos",
-      usuarios: "Usuarios",
-      espacios: "Espacios",
-      perfilesUsuario: "Perfiles",
-      accesos: "Accesos",
-      auditoriaAccesos: "Accesos",
-
-    };
-
-
-    return (
-      nombres[valor] ||
-      valor ||
-      "Sin origen"
+  const esEventoAcceso =
+    seleccionado &&
+    [
+      "LOGIN",
+      "LOGOUT",
+      "LOGIN_FALLIDO",
+    ].includes(
+      seleccionado.evento
     );
-  };
 
 
-  const claseEvento = (valor) => {
-
-    switch (valor) {
-
-      case "INSERT":
-        return "audit-badge audit-insert";
-
-      case "UPDATE":
-        return "audit-badge audit-update";
-
-      case "DELETE":
-        return "audit-badge audit-delete";
-
-      case "LOGIN":
-        return "audit-badge audit-login";
-
-      case "LOGIN_FALLIDO":
-        return "audit-badge audit-delete";
-
-      case "BACKUP":
-        return "audit-badge audit-backup";
-
-      case "RESTORE":
-        return "audit-badge audit-restore";
-
-      default:
-        return "audit-badge";
-    }
-  };
-
-
-  const formatearJson = (valor) => {
-
-    if (!valor) {
-
-      return "";
-    }
-
-
-    try {
-
-      return JSON.stringify(
-        JSON.parse(valor),
-        null,
-        2
-      );
-
-    } catch {
-
-      return valor;
-    }
-  };
+  const infoAcceso =
+    esEventoAcceso
+      ? obtenerInfoAcceso(
+          seleccionado.detalle
+        )
+      : null;
 
 
   // =====================================================
@@ -406,30 +998,24 @@ function Auditoria() {
   // =====================================================
 
   return (
-
     <section className="audit-page">
 
       <header className="audit-heading">
 
         <div>
-
           <span className="audit-eyebrow">
             CONTROL DEL SISTEMA
           </span>
 
           <h1>
-
             <Activity size={29} />
-
             Auditoría
-
           </h1>
 
           <p>
             Consulta quién realizó cada operación,
             cuándo ocurrió y qué información fue modificada.
           </p>
-
         </div>
 
 
@@ -441,25 +1027,20 @@ function Auditoria() {
           }
           disabled={cargando}
         >
-
           <RefreshCw size={17} />
-
           Actualizar
-
         </button>
 
       </header>
 
 
       {error && (
-
         <div
           className="audit-error"
           role="alert"
         >
           {error}
         </div>
-
       )}
 
 
@@ -474,7 +1055,6 @@ function Auditoria() {
           </div>
 
           <div>
-
             <span>
               Eventos registrados
             </span>
@@ -482,7 +1062,6 @@ function Auditoria() {
             <strong>
               {totalEventos}
             </strong>
-
           </div>
 
         </article>
@@ -495,7 +1074,6 @@ function Auditoria() {
           </div>
 
           <div>
-
             <span>
               Cambios de datos
             </span>
@@ -503,7 +1081,6 @@ function Auditoria() {
             <strong>
               {cambiosDatos}
             </strong>
-
           </div>
 
         </article>
@@ -516,7 +1093,6 @@ function Auditoria() {
           </div>
 
           <div>
-
             <span>
               Eventos de acceso
             </span>
@@ -524,7 +1100,6 @@ function Auditoria() {
             <strong>
               {eventosAcceso}
             </strong>
-
           </div>
 
         </article>
@@ -537,7 +1112,6 @@ function Auditoria() {
           </div>
 
           <div>
-
             <span>
               Última actividad
             </span>
@@ -545,7 +1119,6 @@ function Auditoria() {
             <strong className="audit-last-date">
               {ultimaActividad}
             </strong>
-
           </div>
 
         </article>
@@ -560,7 +1133,6 @@ function Auditoria() {
         <div className="audit-panel-heading">
 
           <div>
-
             <span className="audit-eyebrow">
               HISTORIAL
             </span>
@@ -568,21 +1140,15 @@ function Auditoria() {
             <h2>
               Eventos del sistema
             </h2>
-
           </div>
 
 
           <span className="audit-count">
-
-            {eventosFiltrados.length}
-
-            {" "}
-
+            {eventosFiltrados.length}{" "}
             resultado
             {eventosFiltrados.length === 1
               ? ""
               : "s"}
-
           </span>
 
         </div>
@@ -598,7 +1164,7 @@ function Auditoria() {
 
             <input
               type="search"
-              placeholder="Buscar usuario, tabla o evento..."
+              placeholder="Buscar usuario, módulo o evento..."
               value={busqueda}
               onChange={(e) =>
                 setBusqueda(
@@ -618,21 +1184,20 @@ function Auditoria() {
               )
             }
           >
-
             <option value="">
               Todos los módulos
             </option>
 
-            {origenes.map((item) => (
-
-              <option
-                key={item}
-                value={item}
-              >
-                {nombreOrigen(item)}
-              </option>
-
-            ))}
+            {origenes.map(
+              (item) => (
+                <option
+                  key={item}
+                  value={item}
+                >
+                  {nombreOrigen(item)}
+                </option>
+              )
+            )}
 
           </select>
 
@@ -645,21 +1210,20 @@ function Auditoria() {
               )
             }
           >
-
             <option value="">
               Todos los eventos
             </option>
 
-            {tiposEvento.map((item) => (
-
-              <option
-                key={item}
-                value={item}
-              >
-                {item}
-              </option>
-
-            ))}
+            {tiposEvento.map(
+              (item) => (
+                <option
+                  key={item}
+                  value={item}
+                >
+                  {nombreEvento(item)}
+                </option>
+              )
+            )}
 
           </select>
 
@@ -691,7 +1255,9 @@ function Auditoria() {
           <button
             type="button"
             className="audit-clear"
-            onClick={limpiarFiltros}
+            onClick={
+              limpiarFiltros
+            }
           >
             Limpiar
           </button>
@@ -712,18 +1278,14 @@ function Auditoria() {
             <table className="audit-table">
 
               <thead>
-
                 <tr>
-
                   <th>Fecha y hora</th>
                   <th>Módulo</th>
                   <th>Evento</th>
                   <th>Usuario</th>
                   <th>Registro</th>
                   <th>Detalle</th>
-
                 </tr>
-
               </thead>
 
 
@@ -732,7 +1294,6 @@ function Auditoria() {
                 {eventosFiltrados.length === 0 ? (
 
                   <tr>
-
                     <td
                       colSpan="6"
                       className="audit-empty"
@@ -740,7 +1301,6 @@ function Auditoria() {
                       No hay eventos que coincidan
                       con los filtros.
                     </td>
-
                   </tr>
 
                 ) : (
@@ -768,13 +1328,11 @@ function Auditoria() {
 
 
                         <td>
-
                           <strong>
                             {nombreOrigen(
                               fila.origen
                             )}
                           </strong>
-
                         </td>
 
 
@@ -787,7 +1345,9 @@ function Auditoria() {
                               )
                             }
                           >
-                            {fila.evento}
+                            {nombreEvento(
+                              fila.evento
+                            )}
                           </span>
 
                         </td>
@@ -803,11 +1363,9 @@ function Auditoria() {
                             </strong>
 
                             {fila.usuarioBd && (
-
                               <span>
                                 BD: {fila.usuarioBd}
                               </span>
-
                             )}
 
                           </div>
@@ -835,11 +1393,8 @@ function Auditoria() {
                               )
                             }
                           >
-
                             <Eye size={16} />
-
                             Ver detalle
-
                           </button>
 
                         </td>
@@ -862,20 +1417,17 @@ function Auditoria() {
       </div>
 
 
-      {/* MODAL DE DETALLE */}
+      {/* MODAL */}
 
       {seleccionado && (
 
         <div
           className="audit-modal-backdrop"
-
           onMouseDown={(e) => {
-
             if (
               e.target ===
               e.currentTarget
             ) {
-
               setSeleccionado(null);
             }
           }}
@@ -899,7 +1451,9 @@ function Auditoria() {
 
                   {" · "}
 
-                  {seleccionado.evento}
+                  {nombreEvento(
+                    seleccionado.evento
+                  )}
 
                 </h2>
 
@@ -912,9 +1466,7 @@ function Auditoria() {
                   setSeleccionado(null)
                 }
               >
-
                 <X size={21} />
-
               </button>
 
             </div>
@@ -923,7 +1475,6 @@ function Auditoria() {
             <div className="audit-modal-info">
 
               <div>
-
                 <span>
                   Fecha
                 </span>
@@ -939,12 +1490,10 @@ function Auditoria() {
                     : "—"}
 
                 </strong>
-
               </div>
 
 
               <div>
-
                 <span>
                   Usuario
                 </span>
@@ -953,26 +1502,22 @@ function Auditoria() {
                   {seleccionado.usuario ||
                     "No identificado"}
                 </strong>
-
               </div>
 
 
               <div>
-
                 <span>
                   Usuario BD
                 </span>
 
                 <strong>
                   {seleccionado.usuarioBd ||
-                    "—"}
+                    "No aplica"}
                 </strong>
-
               </div>
 
 
               <div>
-
                 <span>
                   Registro
                 </span>
@@ -984,72 +1529,207 @@ function Auditoria() {
                     : "—"}
 
                 </strong>
-
               </div>
 
             </div>
 
 
-            {seleccionado.detalle && (
+            {/* EVENTOS DE ACCESO */}
 
-              <div className="audit-json">
+            {esEventoAcceso && (
+
+              <div className="audit-access-detail">
 
                 <h3>
-                  Información del evento
+                  {nombreEvento(
+                    seleccionado.evento
+                  )}
                 </h3>
 
-                <pre>
-                  {formatearJson(
-                    seleccionado.detalle
-                  )}
-                </pre>
+
+                <p className="audit-access-description">
+
+                  {seleccionado.evento ===
+                    "LOGIN" &&
+                    "El usuario inició sesión correctamente en el sistema."}
+
+                  {seleccionado.evento ===
+                    "LOGOUT" &&
+                    "El usuario cerró su sesión en el sistema."}
+
+                  {seleccionado.evento ===
+                    "LOGIN_FALLIDO" &&
+                    "Se registró un intento de inicio de sesión fallido."}
+
+                </p>
+
+
+                <div className="audit-access-grid">
+
+                  <div>
+                    <span>
+                      Dirección IP
+                    </span>
+
+                    <strong>
+                      {infoAcceso?.ip}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Dispositivo
+                    </span>
+
+                    <strong>
+                      {infoAcceso?.dispositivo}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Navegador
+                    </span>
+
+                    <strong>
+                      {infoAcceso?.navegador}
+                    </strong>
+                  </div>
+
+                </div>
 
               </div>
 
             )}
 
 
-            {(seleccionado.valoresAnteriores ||
-              seleccionado.valoresNuevos) && (
+            {/* CAMBIOS DE DATOS */}
 
-              <div className="audit-changes">
+            {!esEventoAcceso &&
+              detalleSeleccionado && (
 
-                <div className="audit-json">
+              <div className="audit-readable-detail">
+
+                <div className="audit-readable-heading">
+
+                  <span className="audit-eyebrow">
+                    INFORMACIÓN DEL CAMBIO
+                  </span>
 
                   <h3>
-                    Antes
+                    {detalleSeleccionado.titulo}
                   </h3>
-
-                  <pre>
-
-                    {seleccionado.valoresAnteriores
-                      ? formatearJson(
-                          seleccionado.valoresAnteriores
-                        )
-                      : "Sin valores anteriores."}
-
-                  </pre>
 
                 </div>
 
 
-                <div className="audit-json">
+                {detalleSeleccionado.tipo ===
+                  "cambios" && (
 
-                  <h3>
-                    Después
-                  </h3>
+                  <div className="audit-change-list">
 
-                  <pre>
+                    {detalleSeleccionado
+                      .cambios.length === 0 ? (
 
-                    {seleccionado.valoresNuevos
-                      ? formatearJson(
-                          seleccionado.valoresNuevos
+                      <div className="audit-no-changes">
+                        No se detectaron cambios
+                        en los valores registrados.
+                      </div>
+
+                    ) : (
+
+                      detalleSeleccionado
+                        .cambios.map(
+                          (cambio) => (
+
+                            <div
+                              className="audit-change-card"
+                              key={cambio.campo}
+                            >
+
+                              <div className="audit-change-name">
+                                {cambio.nombre}
+                              </div>
+
+
+                              <div className="audit-change-values">
+
+                                <div>
+
+                                  <span>
+                                    Antes
+                                  </span>
+
+                                  <strong className="audit-before">
+                                    {cambio.antes}
+                                  </strong>
+
+                                </div>
+
+
+                                <div className="audit-change-arrow">
+                                  →
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Después
+                                  </span>
+
+                                  <strong className="audit-after">
+                                    {cambio.despues}
+                                  </strong>
+
+                                </div>
+
+                              </div>
+
+                            </div>
+
+                          )
                         )
-                      : "Sin valores nuevos."}
 
-                  </pre>
+                    )}
 
-                </div>
+                  </div>
+
+                )}
+
+
+                {detalleSeleccionado.tipo ===
+                  "datos" && (
+
+                  <div className="audit-data-grid">
+
+                    {detalleSeleccionado
+                      .datos.map(
+                        (dato) => (
+
+                          <div
+                            className="audit-data-item"
+                            key={dato.campo}
+                          >
+
+                            <span>
+                              {dato.nombre}
+                            </span>
+
+                            <strong>
+                              {dato.valor}
+                            </strong>
+
+                          </div>
+
+                        )
+                      )}
+
+                  </div>
+
+                )}
 
               </div>
 

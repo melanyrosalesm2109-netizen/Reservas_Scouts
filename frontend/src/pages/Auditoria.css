@@ -4,7 +4,9 @@
 }
 
 
-/* ENCABEZADO */
+/* =====================================================
+   ENCABEZADO
+   ===================================================== */
 
 .audit-heading {
   display: flex;
@@ -66,7 +68,9 @@
 }
 
 
-/* ERROR */
+/* =====================================================
+   ERROR
+   ===================================================== */
 
 .audit-error {
   margin-bottom: 18px;
@@ -83,7 +87,9 @@
 }
 
 
-/* TARJETAS */
+/* =====================================================
+   TARJETAS DE RESUMEN
+   ===================================================== */
 
 .audit-stats {
   display: grid;
@@ -153,7 +159,9 @@
 }
 
 
-/* PANEL */
+/* =====================================================
+   PANEL PRINCIPAL
+   ===================================================== */
 
 .audit-panel {
   overflow: hidden;
@@ -199,7 +207,9 @@
 }
 
 
-/* FILTROS */
+/* =====================================================
+   FILTROS
+   ===================================================== */
 
 .audit-filters {
   display: grid;
@@ -250,7 +260,6 @@
 
 .audit-filters select,
 .audit-filters input[type="date"] {
-
   min-height: 43px;
 
   padding: 0 10px;
@@ -283,7 +292,9 @@
 }
 
 
-/* TABLA */
+/* =====================================================
+   TABLA
+   ===================================================== */
 
 .audit-table-wrap {
   overflow-x: auto;
@@ -302,14 +313,12 @@
 
 .audit-table th,
 .audit-table td {
-
   padding: 14px 16px;
 
   border-bottom: 1px solid #edf1f3;
 }
 
 .audit-table th {
-
   background: #f8fafb;
 
   color: #667780;
@@ -344,7 +353,6 @@
 }
 
 .audit-user span {
-
   margin-top: 2px;
 
   color: #89979e;
@@ -353,7 +361,6 @@
 }
 
 .audit-empty {
-
   padding: 30px !important;
 
   color: #75848c;
@@ -362,10 +369,11 @@
 }
 
 
-/* EVENTOS */
+/* =====================================================
+   TIPOS DE EVENTOS
+   ===================================================== */
 
 .audit-badge {
-
   display: inline-block;
 
   padding: 5px 9px;
@@ -382,45 +390,41 @@
 
 .audit-insert,
 .audit-login {
-
   background: #e6f6ec;
 
   color: #267246;
 }
 
 .audit-update {
-
   background: #fff2d8;
 
   color: #946316;
 }
 
 .audit-delete {
-
   background: #fde8e8;
 
   color: #a33434;
 }
 
 .audit-backup {
-
   background: #e8f1fb;
 
   color: #306798;
 }
 
 .audit-restore {
-
   background: #f1eafa;
 
   color: #6e4998;
 }
 
 
-/* BOTÓN DETALLE */
+/* =====================================================
+   BOTÓN VER DETALLE
+   ===================================================== */
 
 .audit-detail-button {
-
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -441,17 +445,17 @@
 }
 
 .audit-detail-button:hover {
-
   border-color: #c39551;
 
   background: #fff9f1;
 }
 
 
-/* MODAL */
+/* =====================================================
+   MODAL
+   ===================================================== */
 
 .audit-modal-backdrop {
-
   position: fixed;
 
   z-index: 1000;
@@ -468,7 +472,6 @@
 }
 
 .audit-modal {
-
   width: min(900px, 96vw);
 
   max-height: 88vh;
@@ -485,7 +488,6 @@
 }
 
 .audit-modal-heading {
-
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -498,14 +500,12 @@
 }
 
 .audit-modal-heading h2 {
-
   margin: 5px 0 0;
 
   color: #153b53;
 }
 
 .audit-modal-heading button {
-
   display: grid;
   place-items: center;
 
@@ -520,12 +520,15 @@
   cursor: pointer;
 }
 
-.audit-modal-info {
+.audit-modal-heading button:hover {
+  background: #e5ebee;
+}
 
+.audit-modal-info {
   display: grid;
 
   grid-template-columns:
-    repeat(4, 1fr);
+    repeat(4, minmax(0, 1fr));
 
   gap: 10px;
 
@@ -533,7 +536,6 @@
 }
 
 .audit-modal-info div {
-
   padding: 12px;
 
   border-radius: 10px;
@@ -542,7 +544,6 @@
 }
 
 .audit-modal-info span {
-
   display: block;
 
   margin-bottom: 4px;
@@ -556,131 +557,362 @@
 }
 
 .audit-modal-info strong {
-
   color: #294654;
 
   font-size: 13px;
+
+  overflow-wrap: anywhere;
 }
 
-.audit-json {
 
-  margin:
-    0 24px 18px;
+/* =====================================================
+   DETALLE LEGIBLE DE CAMBIOS
+   ===================================================== */
+
+.audit-readable-detail {
+  margin: 0 24px 24px;
 }
 
-.audit-json h3 {
+.audit-readable-heading {
+  margin-bottom: 14px;
+}
 
-  margin-bottom: 8px;
+.audit-readable-heading h3 {
+  margin: 4px 0 0;
 
-  color: #405864;
+  color: #173d55;
+
+  font-size: 18px;
+}
+
+
+/* =====================================================
+   MODIFICACIONES - ANTES / DESPUÉS
+   ===================================================== */
+
+.audit-change-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.audit-change-card {
+  padding: 15px 17px;
+
+  border: 1px solid #e1e7ea;
+  border-radius: 12px;
+
+  background: #fbfcfc;
+}
+
+.audit-change-name {
+  margin-bottom: 11px;
+
+  color: #173d55;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.audit-change-values {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    35px
+    minmax(0, 1fr);
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.audit-change-values > div:not(.audit-change-arrow) {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.audit-change-values span {
+  color: #82919a;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.audit-change-values strong {
+  min-height: 39px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 9px 11px;
+
+  border-radius: 8px;
 
   font-size: 13px;
+
+  overflow-wrap: anywhere;
 }
 
-.audit-json pre {
+.audit-before {
+  border: 1px solid #f2d8d8;
 
-  overflow-x: auto;
+  background: #fff1f1;
 
-  margin: 0;
+  color: #914141;
+}
 
-  padding: 14px;
+.audit-after {
+  border: 1px solid #cee7d7;
+
+  background: #eaf7ef;
+
+  color: #267047;
+}
+
+.audit-change-arrow {
+  color: #b17b32;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  text-align: center;
+}
+
+.audit-no-changes {
+  padding: 18px;
+
+  border-radius: 10px;
+
+  background: #f5f7f8;
+
+  color: #6c7c85;
+
+  text-align: center;
+}
+
+
+/* =====================================================
+   CREACIONES Y ELIMINACIONES
+   ===================================================== */
+
+.audit-data-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.audit-data-item {
+  padding: 13px 15px;
 
   border: 1px solid #e2e8eb;
   border-radius: 10px;
 
   background: #f8fafb;
-
-  color: #294654;
-
-  font-family:
-    Consolas,
-    monospace;
-
-  font-size: 12px;
-
-  line-height: 1.5;
-
-  white-space: pre-wrap;
-
-  word-break: break-word;
 }
 
-.audit-changes {
+.audit-data-item span {
+  display: block;
 
+  margin-bottom: 5px;
+
+  color: #84929a;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.audit-data-item strong {
+  color: #294654;
+
+  font-size: 13px;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================================================
+   EVENTOS DE ACCESO
+   ===================================================== */
+
+.audit-access-detail {
+  margin: 0 24px 24px;
+
+  padding: 18px;
+
+  border: 1px solid #e2e8eb;
+  border-radius: 12px;
+
+  background: #fbfcfc;
+}
+
+.audit-access-detail h3 {
+  margin: 0 0 5px;
+
+  color: #153b53;
+
+  font-size: 17px;
+}
+
+.audit-access-description {
+  margin: 0 0 15px;
+
+  color: #667680;
+
+  font-size: 14px;
+}
+
+.audit-access-grid {
   display: grid;
 
   grid-template-columns:
-    1fr 1fr;
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.audit-access-grid div {
+  padding: 14px;
+
+  border: 1px solid #e1e7ea;
+  border-radius: 10px;
+
+  background: white;
+}
+
+.audit-access-grid span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #819099;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.audit-access-grid strong {
+  display: block;
+
+  color: #294654;
+
+  font-size: 13px;
+
+  overflow-wrap: anywhere;
 }
 
 
-/* RESPONSIVE */
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
 
 @media (max-width: 1150px) {
-
   .audit-stats {
-
     grid-template-columns:
       repeat(2, 1fr);
   }
 
-
   .audit-filters {
-
     grid-template-columns:
       1fr 1fr 1fr;
+  }
+
+  .audit-modal-info {
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 }
 
 
 @media (max-width: 720px) {
+  .audit-page {
+    width: 100%;
+  }
 
   .audit-heading {
-
     flex-direction: column;
   }
 
-
   .audit-refresh {
-
     width: 100%;
 
     justify-content: center;
   }
 
-
   .audit-stats {
-
     grid-template-columns:
       1fr;
   }
-
 
   .audit-filters {
-
     grid-template-columns:
       1fr;
   }
 
-
   .audit-panel-heading {
-
     align-items: flex-start;
 
     flex-direction: column;
   }
 
+  .audit-modal-backdrop {
+    padding: 10px;
+  }
 
-  .audit-modal-info,
-  .audit-changes {
+  .audit-modal {
+    width: 100%;
+    max-height: 94vh;
+  }
 
+  .audit-modal-heading {
+    padding: 18px;
+  }
+
+  .audit-modal-info {
+    grid-template-columns:
+      1fr;
+
+    padding: 15px 18px;
+  }
+
+  .audit-readable-detail {
+    margin:
+      0 18px 18px;
+  }
+
+  .audit-change-values {
     grid-template-columns:
       1fr;
   }
 
+  .audit-change-arrow {
+    transform: rotate(90deg);
+  }
 
-  .audit-modal-backdrop {
+  .audit-data-grid {
+    grid-template-columns:
+      1fr;
+  }
 
-    padding: 10px;
+  .audit-access-detail {
+    margin:
+      0 18px 18px;
+  }
+
+  .audit-access-grid {
+    grid-template-columns:
+      1fr;
   }
 }

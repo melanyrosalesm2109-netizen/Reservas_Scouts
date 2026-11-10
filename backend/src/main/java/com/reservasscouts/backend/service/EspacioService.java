@@ -5,6 +5,7 @@ import com.reservasscouts.backend.model.Espacio;
 import com.reservasscouts.backend.repository.EspacioRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,12 +14,16 @@ import java.util.List;
 public class EspacioService {
 
     private final EspacioRepository repository;
+    private final AuditoriaContextoService auditoriaContexto;
 
     public EspacioService(
-            EspacioRepository repository
+            EspacioRepository repository,
+            AuditoriaContextoService auditoriaContexto
     ) {
         this.repository = repository;
+        this.auditoriaContexto = auditoriaContexto;
     }
+
 
     public List<Espacio> filtrar(
             String nombre,
@@ -37,6 +42,7 @@ public class EspacioService {
         );
     }
 
+
     public Espacio buscarPorId(
             Integer id
     ) {
@@ -44,26 +50,40 @@ public class EspacioService {
         return repository.buscarPorId(id);
     }
 
+
+    @Transactional
     public Espacio insertar(
             EspacioRequest request
     ) {
 
-        return repository.insertar(request);
+        return auditoriaContexto.ejecutar(
+                () -> repository.insertar(request)
+        );
     }
 
+
+    @Transactional
     public Espacio actualizar(
             Integer id,
             EspacioRequest request
     ) {
 
-        return repository.actualizar(
-                id,
-                request
+        return auditoriaContexto.ejecutar(
+                () -> repository.actualizar(
+                        id,
+                        request
+                )
         );
     }
 
-    public void eliminar(Integer id) {
 
-        repository.eliminar(id);
+    @Transactional
+    public void eliminar(
+            Integer id
+    ) {
+
+        auditoriaContexto.ejecutar(
+                () -> repository.eliminar(id)
+        );
     }
 }

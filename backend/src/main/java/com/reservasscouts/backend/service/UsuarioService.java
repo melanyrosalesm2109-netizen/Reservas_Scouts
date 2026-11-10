@@ -13,28 +13,39 @@ import com.reservasscouts.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 
+
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository repository;
 
+    private final AuditoriaContextoService auditoriaContexto;
+
+
     @Value("${spring.datasource.url}")
     private String jdbcUrl;
+
 
     private final BCryptPasswordEncoder passwordEncoder =
             new BCryptPasswordEncoder();
 
 
     public UsuarioService(
-            UsuarioRepository repository
+            UsuarioRepository repository,
+            AuditoriaContextoService auditoriaContexto
     ) {
+
         this.repository = repository;
+
+        this.auditoriaContexto =
+                auditoriaContexto;
     }
 
 
@@ -72,6 +83,7 @@ public class UsuarioService {
     // INSERTAR USUARIO
     // =====================================================
 
+    @Transactional
     public Usuario insertar(
             UsuarioRequest request
     ) {
@@ -103,11 +115,13 @@ public class UsuarioService {
                 );
 
 
-        return repository.insertar(
-                request.rolId(),
-                request.email().trim(),
-                hash,
-                request.estado()
+        return auditoriaContexto.ejecutar(
+                () -> repository.insertar(
+                        request.rolId(),
+                        request.email().trim(),
+                        hash,
+                        request.estado()
+                )
         );
     }
 
@@ -116,12 +130,13 @@ public class UsuarioService {
     // ACTUALIZAR USUARIO
     // =====================================================
 
+    @Transactional
     public Usuario actualizar(
             Integer id,
             UsuarioRequest request
     ) {
 
-        String hash = null;
+        final String hash;
 
 
         /*
@@ -147,15 +162,21 @@ public class UsuarioService {
                     passwordEncoder.encode(
                             request.password()
                     );
+
+        } else {
+
+            hash = null;
         }
 
 
-        return repository.actualizar(
-                id,
-                request.rolId(),
-                request.email().trim(),
-                hash,
-                request.estado()
+        return auditoriaContexto.ejecutar(
+                () -> repository.actualizar(
+                        id,
+                        request.rolId(),
+                        request.email().trim(),
+                        hash,
+                        request.estado()
+                )
         );
     }
 
@@ -164,11 +185,14 @@ public class UsuarioService {
     // ELIMINAR USUARIO
     // =====================================================
 
+    @Transactional
     public void eliminar(
             Integer id
     ) {
 
-        repository.eliminar(id);
+        auditoriaContexto.ejecutar(
+                () -> repository.eliminar(id)
+        );
     }
 
 
@@ -222,10 +246,6 @@ public class UsuarioService {
                 );
 
 
-        /*
-         * Si el usuario o correo no existe,
-         * no permitimos el acceso.
-         */
         if (usuario == null) {
 
             throw new IllegalArgumentException(
@@ -234,10 +254,6 @@ public class UsuarioService {
         }
 
 
-        /*
-         * Solo usuarios activos
-         * pueden iniciar sesión.
-         */
         if (
                 !"ACTIVO".equalsIgnoreCase(
                         usuario.estado()
@@ -250,10 +266,6 @@ public class UsuarioService {
         }
 
 
-        /*
-         * Para las cuentas tradicionales
-         * se mantiene la validación con BCrypt.
-         */
         boolean passwordCorrecto =
                 passwordEncoder.matches(
                         request.password(),
@@ -303,18 +315,9 @@ public class UsuarioService {
 
 
             /*
-             * Si llegamos hasta aquí,
-             * SQL Server aceptó las credenciales.
-             *
-             * Asociamos el usuario de BD con una
-             * cuenta existente de la aplicación
-             * para reutilizar los roles y permisos.
-             *
-             * reservas_app
-             *      -> Administrador
-             *
-             * reservas_consulta
-             *      -> Usuario restringido
+             * Si SQL Server acepta las credenciales,
+             * asociamos el usuario del motor con
+             * una cuenta existente de la aplicación.
              */
             String emailAplicacion;
 
@@ -335,10 +338,6 @@ public class UsuarioService {
             }
 
 
-            /*
-             * Buscamos la cuenta asociada
-             * para obtener su id y rol.
-             */
             UsuarioLogin usuario =
                     repository.buscarParaLogin(
                             emailAplicacion
@@ -366,16 +365,9 @@ public class UsuarioService {
 
 
             /*
-             * Importante:
-             *
-             * En lugar de devolver el correo asociado,
-             * devolvemos el usuario real de SQL Server.
-             *
-             * Así en la interfaz aparecerá:
-             *
-             * reservas_app
-             * o
-             * reservas_consulta
+             * Mostramos en la interfaz el usuario
+             * real utilizado para iniciar sesión
+             * en SQL Server.
              */
             return new LoginResponse(
                     usuario.id(),

@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    SISTEMA DE RESERVAS SCOUTS
    Script principal de creación de base de datos
 
@@ -3999,7 +3999,16 @@ BEGIN
                 END) AS despues
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ),
-        NULL, NULL, @usuarioBd, SYSDATETIME()
+        TRY_CONVERT(
+            INT,
+            SESSION_CONTEXT(N'app_usuario_id')
+        ),
+        TRY_CONVERT(
+            NVARCHAR(160),
+            SESSION_CONTEXT(N'app_usuario_nombre')
+        ),
+        @usuarioBd,
+        SYSDATETIME()
     FROM inserted AS i
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
@@ -4039,7 +4048,16 @@ BEGIN
                 END) AS despues
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ),
-        NULL, NULL, @usuarioBd, SYSDATETIME()
+        TRY_CONVERT(
+            INT,
+            SESSION_CONTEXT(N'app_usuario_id')
+        ),
+        TRY_CONVERT(
+            NVARCHAR(160),
+            SESSION_CONTEXT(N'app_usuario_nombre')
+        ),
+        @usuarioBd,
+        SYSDATETIME()
     FROM inserted AS i
     FULL OUTER JOIN deleted AS d ON d.idPerfil = i.idPerfil;
 END;
@@ -4079,7 +4097,16 @@ BEGIN
                 END) AS despues
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ),
-        NULL, NULL, @usuarioBd, SYSDATETIME()
+        TRY_CONVERT(
+            INT,
+            SESSION_CONTEXT(N'app_usuario_id')
+        ),
+        TRY_CONVERT(
+            NVARCHAR(160),
+            SESSION_CONTEXT(N'app_usuario_nombre')
+        ),
+        @usuarioBd,
+        SYSDATETIME()
     FROM inserted AS i
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
@@ -4121,7 +4148,16 @@ BEGIN
                 END) AS despues
             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
         ),
-        NULL, NULL, @usuarioBd, SYSDATETIME()
+        TRY_CONVERT(
+            INT,
+            SESSION_CONTEXT(N'app_usuario_id')
+        ),
+        TRY_CONVERT(
+            NVARCHAR(160),
+            SESSION_CONTEXT(N'app_usuario_nombre')
+        ),
+        @usuarioBd,
+        SYSDATETIME()
     FROM inserted AS i
     FULL OUTER JOIN deleted AS d ON d.id = i.id;
 END;
@@ -4637,3 +4673,4 @@ GO
 
 ALTER DATABASE [reservasScouts] SET READ_WRITE
 GO
+
