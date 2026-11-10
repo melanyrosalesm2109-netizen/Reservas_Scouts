@@ -1,6 +1,6 @@
 ﻿import { apiFetch } from "./api";
 
-const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/respaldo`;
+const API_URL = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/respaldo`;
 
 async function procesarRespuesta(response) {
   const data = await response.json().catch(() => null);
@@ -25,4 +25,5 @@ export async function restaurarRespaldo(nombreArchivo, confirmacion) {
     body: JSON.stringify({ nombreArchivo, confirmacion })
   }));
 }
+
 

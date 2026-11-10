@@ -1,7 +1,7 @@
 ﻿import { apiFetch as fetch } from "./api";
 
 const API_URL =
-  `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/usuarios`;
+  `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/usuarios`;
 
 async function procesarRespuesta(response) {
 
@@ -169,3 +169,4 @@ export async function eliminarUsuario(
 
   return procesarRespuesta(response);
 }
+

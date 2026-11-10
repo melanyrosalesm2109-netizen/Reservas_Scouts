@@ -1,6 +1,6 @@
 ﻿import { apiFetch } from "./api";
 
-const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/auditoria`;
+const API_URL = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/auditoria`;
 
 async function procesarRespuesta(response, mensajeError) {
   const data = await response.json().catch(() => null);
@@ -35,3 +35,4 @@ export async function obtenerDetalleAuditoria() {
     "No se pudo cargar el historial de auditoría."
   );
 }
+
