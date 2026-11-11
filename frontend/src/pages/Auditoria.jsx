@@ -28,6 +28,45 @@ import "./Auditoria.css";
 
 
 function Auditoria() {
+    const convertirFechaAuditoria = (valor) => {
+    if (!valor) return null;
+
+    const texto = String(valor).trim();
+
+    const tieneZonaHoraria =
+      texto.endsWith("Z") ||
+      /[+-]\d{2}:\d{2}$/.test(texto);
+
+    const fecha = new Date(
+      tieneZonaHoraria
+        ? texto
+        : `${texto}Z`
+    );
+
+    if (Number.isNaN(fecha.getTime())) {
+      return null;
+    }
+
+    return fecha;
+  };
+
+  const formatearFechaAuditoria = (valor) => {
+    const fecha =
+      convertirFechaAuditoria(valor);
+
+    if (!fecha) return "—";
+
+    return fecha.toLocaleString("es-CR", {
+      timeZone: "America/Costa_Rica",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    });
+  };
   const [resumen, setResumen] = useState([]);
   const [eventos, setEventos] = useState([]);
 
@@ -793,9 +832,9 @@ function Auditoria() {
 
 
       const fecha =
-        item.creadoEn
-          ? new Date(item.creadoEn)
-          : null;
+  convertirFechaAuditoria(
+    item.creadoEn
+  );
 
 
       const fechaValida =
@@ -922,44 +961,45 @@ function Auditoria() {
   }, [resumen]);
 
 
-  const ultimaActividad = useMemo(() => {
-    const fechas =
-      resumen
-        .map(
-          (item) =>
-            new Date(
-              item.ultimoEvento
-            )
+ const ultimaActividad = useMemo(() => {
+
+  const fechas =
+    resumen
+      .map((item) =>
+        convertirFechaAuditoria(
+          item.ultimoEvento
         )
-        .filter(
-          (fecha) =>
-            !Number.isNaN(
-              fecha.getTime()
-            )
-        );
+      )
+      .filter(Boolean);
 
+  if (fechas.length === 0) {
+    return "Sin actividad";
+  }
 
-    if (fechas.length === 0) {
-      return "Sin actividad";
-    }
-
-
-    const ultima =
-      new Date(
-        Math.max(
-          ...fechas.map(
-            (fecha) =>
-              fecha.getTime()
-          )
+  const ultima =
+    new Date(
+      Math.max(
+        ...fechas.map(
+          (fecha) => fecha.getTime()
         )
-      );
-
-
-    return ultima.toLocaleString(
-      "es-CR"
+      )
     );
-  }, [resumen]);
 
+  return ultima.toLocaleString(
+    "es-CR",
+    {
+      timeZone: "America/Costa_Rica",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    }
+  );
+
+}, [resumen]);
 
   const limpiarFiltros = () => {
     setBusqueda("");
@@ -1316,13 +1356,9 @@ function Auditoria() {
 
                         <td className="audit-date">
 
-                          {fila.creadoEn
-                            ? new Date(
-                                fila.creadoEn
-                              ).toLocaleString(
-                                "es-CR"
-                              )
-                            : "—"}
+                          {formatearFechaAuditoria(
+  fila.creadoEn
+)}
 
                         </td>
 
@@ -1481,13 +1517,9 @@ function Auditoria() {
 
                 <strong>
 
-                  {seleccionado.creadoEn
-                    ? new Date(
-                        seleccionado.creadoEn
-                      ).toLocaleString(
-                        "es-CR"
-                      )
-                    : "—"}
+                  {formatearFechaAuditoria(
+  seleccionado.creadoEn
+)}
 
                 </strong>
               </div>
