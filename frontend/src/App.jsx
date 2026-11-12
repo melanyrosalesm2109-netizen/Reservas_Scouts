@@ -78,7 +78,7 @@ function App() {
           <Route
             path="/espacios"
             element={
-              <ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}>
+              <ProtectedRoute>
                 <Espacios />
               </ProtectedRoute>
             }

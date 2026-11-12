@@ -1,48 +1,59 @@
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-
-  NavLink,
-  Outlet,
-  useNavigate
-
-} from "react-router-dom";
-
-import {
-
-  LayoutDashboard,
-  CalendarDays,
-  Building2,
-  UsersRound,
-  CreditCard,
-  ShieldCheck,
-  Activity,
-  HardDrive,
-  LogOut,
-  TentTree
-
+  LayoutDashboard, CalendarDays, Building2, UsersRound, CreditCard,
+  ShieldCheck, Activity, HardDrive, LogOut, TentTree, Menu, ChevronDown
 } from "lucide-react";
-
-import {
-  cerrarSesion as eliminarSesion
-} from "../services/authService";
+import { cerrarSesion as eliminarSesion } from "../services/authService";
 import { useAuth } from "../context/useAuth";
-import { useState } from "react";
-
 import "./MainLayout.css";
 
+const secciones = [
+  { ruta: "/dashboard", nombre: "Dashboard", icono: LayoutDashboard, roles: ["Administrador"] },
+  { ruta: "/reservas", nombre: "Reservas", icono: CalendarDays },
+  { ruta: "/espacios", nombre: "Espacios", icono: Building2 },
+  { ruta: "/perfiles", nombre: "Perfiles", icono: UsersRound, roles: ["Administrador", "Recepcionista"] },
+  { ruta: "/pagos", nombre: "Pagos", icono: CreditCard, roles: ["Administrador", "Recepcionista"] },
+  { ruta: "/usuarios", nombre: "Usuarios", icono: ShieldCheck, roles: ["Administrador"] },
+  { ruta: "/auditoria", nombre: "Auditoría", icono: Activity, roles: ["Administrador"] },
+  { ruta: "/respaldos", nombre: "Respaldos", icono: HardDrive, roles: ["Administrador"] }
+];
+
 function MainLayout() {
-
-  const navigate =
-    useNavigate();
-
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { usuario, setUsuario } = useAuth();
+  const menuRef = useRef(null);
   const [errorCerrarSesion, setErrorCerrarSesion] = useState("");
+  const opciones = secciones.filter((seccion) => !seccion.roles || seccion.roles.includes(usuario?.rol));
+  const seccionActual = opciones.find((seccion) => seccion.ruta === pathname)?.nombre || "Menú";
+  const inicial = usuario?.email?.charAt(0)?.toUpperCase() || "U";
 
+  useEffect(() => {
+    function cerrarFuera(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) menuRef.current.open = false;
+    }
+    function cerrarConEscape(event) {
+      if (event.key === "Escape" && menuRef.current?.open) {
+        menuRef.current.open = false;
+        menuRef.current.querySelector("summary")?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", cerrarFuera);
+    document.addEventListener("keydown", cerrarConEscape);
+    const vistaAmplia = window.matchMedia("(min-width: 1280px)");
+    function cerrarAlCambiarVista() {
+      if (menuRef.current) menuRef.current.open = false;
+    }
+    vistaAmplia.addEventListener("change", cerrarAlCambiarVista);
+    return () => {
+      document.removeEventListener("pointerdown", cerrarFuera);
+      document.removeEventListener("keydown", cerrarConEscape);
+      vistaAmplia.removeEventListener("change", cerrarAlCambiarVista);
+    };
+  }, []);
 
-  // =====================================================
-  // CERRAR SESIÓN
-  // =====================================================
-
-  const cerrarSesion = async () => {
+  async function cerrarSesion() {
     setErrorCerrarSesion("");
     try {
       await eliminarSesion();
@@ -51,263 +62,54 @@ function MainLayout() {
     } catch (err) {
       setErrorCerrarSesion(err.message || "No se pudo cerrar la sesión.");
     }
-  };
-
-
-  // =====================================================
-  // INICIAL DEL USUARIO
-  // =====================================================
-
-  const inicial =
-
-    usuario?.email
-      ?.charAt(0)
-      ?.toUpperCase()
-      || "U";
-
+  }
 
   return (
-
     <div className="main-layout">
-
-      <aside className="sidebar">
-
-        <div>
-
-          {/* ==========================================
-              LOGO
-          ========================================== */}
-
-          <div className="brand">
-
-            <div className="brand-icon">
-
-              <TentTree
-                size={27}
-              />
-
-            </div>
-
-            <div>
-
-              <h2>
-                Reservas
-              </h2>
-
-              <span>
-                SCOUTS
-              </span>
-
-            </div>
-
+      <header className="topbar">
+        <div className="topbar-inner">
+          <div className="topbar-brand">
+            <div className="topbar-brand-icon"><TentTree size={27} aria-hidden="true" /></div>
+            <div><h2>Reservas</h2><span>SCOUTS</span></div>
           </div>
-
-
-          <div className="menu-label">
-
-            MENÚ PRINCIPAL
-
-          </div>
-
-
-          {/* ==========================================
-              MENÚ
-          ========================================== */}
-
-          <nav className="sidebar-menu">
-
-            {usuario?.rol === "Administrador" && (
-            <NavLink to="/dashboard">
-
-              <LayoutDashboard
-                size={19}
-              />
-
-              <span>
-                Dashboard
-              </span>
-
-            </NavLink>
-            )}
-
-
-            <NavLink
-              to="/reservas"
-            >
-
-              <CalendarDays
-                size={19}
-              />
-
-              <span>
-                Reservas
-              </span>
-
-            </NavLink>
-
-
-            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
-            <NavLink to="/espacios">
-
-              <Building2
-                size={19}
-              />
-
-              <span>
-                Espacios
-              </span>
-
-            </NavLink>
-            )}
-
-
-            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
-            <NavLink to="/perfiles">
-
-              <UsersRound
-                size={19}
-              />
-
-              <span>
-                Perfiles
-              </span>
-
-            </NavLink>
-            )}
-
-
-            {(usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista") && (
-            <NavLink to="/pagos">
-
-              <CreditCard
-                size={19}
-              />
-
-              <span>
-                Pagos
-              </span>
-
-            </NavLink>
-            )}
-
-
-            {/* Solo mostramos Usuarios
-                al Administrador */}
-
-            {usuario?.rol ===
-              "Administrador" && (
-
-              <NavLink
-                to="/usuarios"
-              >
-
-                <ShieldCheck
-                  size={19}
-                />
-
-                <span>
-                  Usuarios
-                </span>
-
-              </NavLink>
-
-            )}
-
-            {usuario?.rol === "Administrador" && (
-              <NavLink to="/auditoria">
-                <Activity size={19} />
-                <span>Auditoría</span>
-              </NavLink>
-            )}
-
-            {usuario?.rol === "Administrador" && (
-              <NavLink to="/respaldos">
-                <HardDrive size={19} />
-                <span>Respaldos</span>
-              </NavLink>
-            )}
-
+          <nav className="topbar-desktop-nav" aria-label="Navegación principal">
+            {opciones.map(({ ruta, nombre }) => (
+              <NavLink key={ruta} to={ruta}>{nombre}</NavLink>
+            ))}
           </nav>
-
-        </div>
-
-
-        {/* ==========================================
-            USUARIO ACTUAL
-        ========================================== */}
-
-        <div className="sidebar-bottom">
-
-          <div className="user-card">
-
-            <div className="user-avatar">
-
-              {inicial}
-
+          <details className="topbar-dropdown" ref={menuRef}>
+            <summary aria-controls="main-navigation">
+              <Menu size={19} aria-hidden="true" /><span>Menú</span>
+              <span className="topbar-current">{seccionActual}</span>
+              <ChevronDown className="topbar-chevron" size={17} aria-hidden="true" />
+            </summary>
+            <nav id="main-navigation" className="topbar-panel" aria-label="Menú principal">
+              <div className="topbar-panel-label">MENÚ PRINCIPAL</div>
+              <div className="topbar-links">
+                {opciones.map(({ ruta, nombre, icono: Icono }) => (
+                  <NavLink key={ruta} to={ruta} onClick={() => { menuRef.current.open = false; }}>
+                    <Icono size={20} aria-hidden="true" /><span>{nombre}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </nav>
+          </details>
+          <div className="topbar-account">
+            <div className="topbar-user">
+              <div className="topbar-avatar">{inicial}</div>
+              <div className="topbar-user-info">
+                <strong>{usuario?.rol || "Usuario"}</strong>
+                <span title={usuario?.email}>{usuario?.email || "Sesión activa"}</span>
+              </div>
             </div>
-
-
-            <div className="user-info-session">
-
-              <strong>
-
-                {usuario?.rol ||
-                  "Usuario"}
-
-              </strong>
-
-              <span
-                title={
-                  usuario?.email
-                }
-              >
-
-                {usuario?.email ||
-                  "Sesión activa"}
-
-              </span>
-
-            </div>
-
+            <button type="button" className="topbar-logout" onClick={() => { void cerrarSesion(); }}>
+              <LogOut size={17} aria-hidden="true" /><span>Cerrar sesión</span>
+            </button>
           </div>
-
-
-          <button
-
-            type="button"
-
-            className="logout-button"
-
-            onClick={() => { void cerrarSesion(); }}
-
-          >
-
-            <LogOut
-              size={18}
-            />
-
-            Cerrar sesión
-
-          </button>
-          {errorCerrarSesion && (
-            <p role="alert">{errorCerrarSesion}</p>
-          )}
-
         </div>
-
-      </aside>
-
-
-      {/* ==========================================
-          CONTENIDO
-      ========================================== */}
-
-      <main className="main-content">
-
-        <Outlet />
-
-      </main>
-
+        {errorCerrarSesion && <p className="topbar-error" role="alert">{errorCerrarSesion}</p>}
+      </header>
+      <main className="main-content"><Outlet /></main>
     </div>
   );
 }

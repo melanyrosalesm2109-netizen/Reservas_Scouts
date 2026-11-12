@@ -242,7 +242,7 @@ function Auditoria() {
 
 
   useEffect(() => {
-    void cargarAuditoria();
+    queueMicrotask(() => { void cargarAuditoria(); });
   }, []);
 
 

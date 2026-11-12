@@ -8,7 +8,6 @@ import {
   X,
   MapPin,
   Users,
-  CircleDollarSign,
   RotateCcw
 } from "lucide-react";
 
@@ -39,6 +38,30 @@ const filtrosVacios = {
   capacidadMinima: "",
   costoMaximo: ""
 };
+
+const imagenesCatalogo = ["/images/espacios/campo-demo.png", "/images/espacios/sede-demo.png", "/images/espacios/centro-demo.png"];
+
+function GaleriaEspacio({ espacio }) {
+  const imagenes = [...new Set([espacio.imagen, ...imagenesCatalogo].filter(Boolean))];
+  const [indice, setIndice] = useState(0);
+  const [pausada, setPausada] = useState(false);
+  useEffect(() => {
+    if (pausada || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setIndice(actual => (actual + 1) % imagenes.length), 6000);
+    return () => window.clearInterval(timer);
+  }, [pausada, imagenes.length]);
+  return (
+    <div className="espacio-card-cover" onMouseEnter={() => setPausada(true)} onMouseLeave={() => setPausada(false)} onFocus={() => setPausada(true)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPausada(false); }}>
+      <img src={imagenes[indice % imagenes.length]} alt={espacio.nombre} loading="lazy" onError={(event) => { if (!event.currentTarget.src.endsWith("/images/espacios/campo-demo.png")) event.currentTarget.src = "/images/espacios/campo-demo.png"; }} />
+      <span className={"space-status " + espacio.estado?.toLowerCase()}>{espacio.estado}</span>
+      <div className="espacio-gallery-controls">
+        <button type="button" aria-label={"Imagen anterior de " + espacio.nombre} onClick={() => setIndice(actual => (actual - 1 + imagenes.length) % imagenes.length)}>‹</button>
+        <span>{indice % imagenes.length + 1} / {imagenes.length}</span>
+        <button type="button" aria-label={"Siguiente imagen de " + espacio.nombre} onClick={() => setIndice(actual => (actual + 1) % imagenes.length)}>›</button>
+      </div>
+    </div>
+  );
+}
 
 function Espacios() {
   const { usuario } = useAuth();
@@ -297,7 +320,7 @@ function Espacios() {
           <h1>Espacios</h1>
 
           <p>
-            Administra los espacios disponibles para las reservas.
+            {puedeAdministrarEspacios ? "Administra los espacios disponibles para las reservas." : "Explora los espacios disponibles para tus actividades."}
           </p>
         </div>
 
@@ -476,185 +499,31 @@ function Espacios() {
           Mostrando {espacios.length} espacio(s)
         </div>
 
-        {/* TABLA */}
-        <div className="espacios-table-wrapper">
-
-          <table className="espacios-table">
-
-            <thead>
-              <tr>
-                <th>Espacio</th>
-                <th>Ubicación</th>
-                <th>Capacidad</th>
-                <th>Costo</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {cargando ? (
-
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="espacios-empty"
-                  >
-                    Cargando espacios...
-                  </td>
-                </tr>
-
-              ) : espacios.length === 0 ? (
-
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="espacios-empty"
-                  >
-
-                    <Building2 size={35} />
-
-                    <strong>
-                      No se encontraron espacios
-                    </strong>
-
-                    <span>
-                      Puedes cambiar los filtros o crear un nuevo espacio.
-                    </span>
-
-                  </td>
-                </tr>
-
-              ) : (
-
-                espacios.map((espacio) => (
-
-                  <tr key={espacio.id}>
-
-                    {/* ESPACIO */}
-                    <td>
-
-                      <div className="space-name">
-
-                        <div>
-                          <Building2 size={17} />
-                        </div>
-
-                        <div>
-
-                          <strong>
-                            {espacio.nombre}
-                          </strong>
-
-                          <small>
-                            {espacio.descripcion ||
-                              "Sin descripción"}
-                          </small>
-
-                        </div>
-
-                      </div>
-
-                    </td>
-
-                    {/* UBICACIÓN */}
-                    <td>
-
-                      <span className="space-detail">
-
-                        <MapPin size={14} />
-
-                        {espacio.ubicacion}
-
-                      </span>
-
-                    </td>
-
-                    {/* CAPACIDAD */}
-                    <td>
-
-                      <span className="space-detail">
-
-                        <Users size={14} />
-
-                        {espacio.capacidad}
-
-                      </span>
-
-                    </td>
-
-                    {/* COSTO */}
-                    <td>
-
-                      <span className="space-detail">
-
-                        <CircleDollarSign size={14} />
-
-                        ₡
-                        {Number(
-                          espacio.costo
-                        ).toLocaleString("es-CR")}
-
-                      </span>
-
-                    </td>
-
-                    {/* ESTADO */}
-                    <td>
-
-                      <span
-                        className={`space-status ${
-                          espacio.estado?.toLowerCase()
-                        }`}
-                      >
-                        {espacio.estado}
-                      </span>
-
-                    </td>
-
-                    {/* ACCIONES */}
-                    <td>
-
-                      {puedeAdministrarEspacios ? <div className="space-actions">
-
-                        <button
-                          type="button"
-                          className="space-edit"
-                          onClick={() =>
-                            abrirEditar(espacio)
-                          }
-                          title="Editar espacio"
-                        >
-                          <Pencil size={16} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="space-delete"
-                          onClick={() =>
-                            borrarEspacio(espacio)
-                          }
-                          title="Eliminar espacio"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-
-                      </div>
-                      : <span>Solo lectura</span>}
-
-                    </td>
-
-                  </tr>
-
-                ))
-
-              )}
-
-            </tbody>
-
-          </table>
-
+        <div className="espacios-catalogo" aria-live="polite" aria-busy={cargando}>
+          {cargando ? <p className="espacios-empty">Cargando espacios...</p> : espacios.length === 0 ? (
+            <div className="espacios-empty"><Building2 size={35} /><strong>No se encontraron espacios</strong><span>Puedes cambiar los filtros o crear un nuevo espacio.</span></div>
+          ) : espacios.map((espacio) => {
+            const esDemo = espacio.descripcion?.includes("Datos de demostración");
+            const tipo = esDemo ? espacio.descripcion.split(". ")[0] : "Espacio Scout";
+            return (
+              <article className="espacio-card" key={espacio.id}>
+                <GaleriaEspacio key={espacio.imagen} espacio={espacio} />
+                <div className="espacio-card-body">
+                  <span className="espacio-card-type">{tipo}</span>
+                  <h2>{espacio.nombre}</h2>
+                  <p className="espacio-card-location"><MapPin size={15} />{espacio.ubicacion}</p>
+                  <p className="espacio-card-capacity"><Users size={16} />Hasta {espacio.capacidad} personas</p>
+                  <div className="espacio-card-footer">
+                    <div><span>Costo</span><strong>{Number(espacio.costo).toLocaleString("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 })}</strong></div>
+                    {puedeAdministrarEspacios ? <div className="space-actions">
+                      <button type="button" className="space-edit" onClick={() => abrirEditar(espacio)} aria-label={"Editar " + espacio.nombre} title="Editar espacio"><Pencil size={16} /></button>
+                      <button type="button" className="space-delete" onClick={() => borrarEspacio(espacio)} aria-label={"Eliminar " + espacio.nombre} title="Eliminar espacio"><Trash2 size={16} /></button>
+                    </div> : <span className="espacio-readonly">Solo lectura</span>}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
 
       </section>

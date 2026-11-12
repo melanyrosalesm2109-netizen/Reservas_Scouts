@@ -118,7 +118,7 @@ export async function cleanupReservationFixture(api, fixture) {
 
 export async function loginThroughUi(page, email, password) {
   await page.goto("/login");
-  await page.getByPlaceholder("Ingrese su correo").fill(email);
+  await page.getByPlaceholder("Ingrese su usuario o correo").fill(email);
   await page.getByPlaceholder("Ingrese su contraseña").fill(password);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 }

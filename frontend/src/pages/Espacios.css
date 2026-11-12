@@ -803,4 +803,27 @@
   .espacios-filtros-reales {
     grid-template-columns: 1fr;
   }
-}
+}/* Catálogo adaptable de espacios */
+.espacios-catalogo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; padding: 22px; }
+.espacio-card { min-width: 0; overflow: hidden; background: white; border: 1px solid #e7e1d9; border-radius: 14px; box-shadow: 0 5px 18px #12364b0d; display: flex; flex-direction: column; transition: box-shadow .2s, transform .2s; }
+.espacio-card:hover { transform: translateY(-3px); box-shadow: 0 12px 25px #12364b17; }
+.espacio-card-cover { position: relative; aspect-ratio: 4 / 3; background: #e5ebe6; overflow: hidden; }
+.espacio-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+.espacio-card-cover .space-status { position: absolute; top: 12px; left: 12px; box-shadow: 0 2px 8px #0001; }
+.espacio-card-body { padding: 19px; display: flex; flex-direction: column; flex: 1; }
+.espacio-card-type { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #987039; }
+.espacio-card h2 { color: #12364b; font-family: Georgia, serif; font-size: 21px; line-height: 1.25; margin: 8px 0 12px; }
+.espacio-card-location, .espacio-card-capacity { display: flex; align-items: center; gap: 7px; color: #69777d; font-size: 12px; margin: 0 0 10px; }
+.espacio-card-location svg, .espacio-card-capacity svg { flex-shrink: 0; color: #ad8749; }
+.espacio-card-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid #eee9e1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.espacio-card-footer > div:first-child { display: flex; flex-direction: column; gap: 4px; }
+.espacio-card-footer span { font-size: 10px; color: #77858a; }
+.espacio-card-footer strong { color: #12364b; font-size: 20px; }
+.espacios-catalogo > .espacios-empty { grid-column: 1 / -1; }
+@media (max-width: 1200px) { .espacios-catalogo { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 950px) { .espacios-catalogo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 580px) { .espacios-catalogo { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 18px; } .espacio-card-cover { aspect-ratio: 16 / 10; } }
+
+.espacio-gallery-controls { position: absolute; bottom: 10px; right: 10px; display: flex; align-items: center; gap: 9px; padding: 4px; border-radius: 24px; background: #0e3047c9; color: white; font-size: 11px; }
+.espacio-gallery-controls button { width: 28px; height: 28px; border: none; border-radius: 50%; background: white; color: #12364b; font-size: 23px; cursor: pointer; line-height: 1; }
+.espacio-gallery-controls button:focus-visible { outline: 3px solid #d6b267; outline-offset: 2px; }
