@@ -366,7 +366,7 @@ function Reservas() {
 
 
 
-  }, []);
+  }, [esUsuarioFinal]);
 
 
 
@@ -914,7 +914,7 @@ function Reservas() {
 
         creadoPorUsuarioId:
 
-          null,
+          formulario.creadoPorUsuarioId ?? null,
 
 
 
@@ -1494,13 +1494,18 @@ function Reservas() {
 
 
 
+          cerrarModal();
+
+          setDisponibilidadEspacios({});
+
           setError(
-
-            "El espacio ya no está disponible en ese rango de fecha y hora. Consulte otra fecha."
-
+            "No se pudo completar la reserva porque ese horario ya está ocupado. Seleccione otra fecha u horario."
           );
 
-
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+          });
 
           return;
 

@@ -1,7 +1,8 @@
 package com.reservasscouts.backend.service;
-import com.reservasscouts.backend.model.ReservaFechaOcupada;
+
 import com.reservasscouts.backend.dto.ReservaRequest;
 import com.reservasscouts.backend.model.Reserva;
+import com.reservasscouts.backend.model.ReservaFechaOcupada;
 import com.reservasscouts.backend.model.ReservaResumen;
 import com.reservasscouts.backend.repository.ReservaRepository;
 
@@ -29,6 +30,10 @@ public class ReservaService {
     }
 
 
+    // =====================================================
+    // LISTAR / FILTRAR
+    // =====================================================
+
     public List<ReservaResumen> filtrar(
             String codigo,
             String responsable,
@@ -53,11 +58,17 @@ public class ReservaService {
     }
 
 
+    // =====================================================
+    // BUSCAR POR ID
+    // =====================================================
+
     public Reserva buscarPorId(
             Integer id
     ) {
 
-        return repository.buscarPorId(id);
+        return repository.buscarPorId(
+                id
+        );
     }
 
 
@@ -71,17 +82,21 @@ public class ReservaService {
             LocalDateTime fechaFin
     ) {
 
-        if (espacioId == null || espacioId <= 0) {
+        if (
+                espacioId == null
+                        || espacioId <= 0
+        ) {
 
             throw new IllegalArgumentException(
                     "El espacio indicado no es válido."
             );
         }
 
+
         if (
-                fechaInicio == null ||
-                fechaFin == null ||
-                !fechaFin.isAfter(fechaInicio)
+                fechaInicio == null
+                        || fechaFin == null
+                        || !fechaFin.isAfter(fechaInicio)
         ) {
 
             throw new IllegalArgumentException(
@@ -89,27 +104,38 @@ public class ReservaService {
             );
         }
 
+
         return repository.consultarDisponibilidad(
                 espacioId,
                 fechaInicio,
                 fechaFin
         );
     }
-// =====================================================
-// FECHAS OCUPADAS
-// =====================================================
 
-public List<ReservaFechaOcupada> listarFechasOcupadas() {
 
-    return repository.listarFechasOcupadas();
-}
+    // =====================================================
+    // FECHAS OCUPADAS
+    // =====================================================
+
+    public List<ReservaFechaOcupada> listarFechasOcupadas() {
+
+        return repository.listarFechasOcupadas();
+    }
+
+
+    // =====================================================
+    // INSERTAR
+    // =====================================================
 
     @Transactional
     public Reserva insertar(
             ReservaRequest request
     ) {
 
-        validarFechas(request);
+        validarFechas(
+                request
+        );
+
 
         return auditoriaContexto.ejecutar(
                 () -> repository.insertar(
@@ -119,22 +145,80 @@ public List<ReservaFechaOcupada> listarFechasOcupadas() {
     }
 
 
+    // =====================================================
+    // ACTUALIZAR
+    // =====================================================
+
     @Transactional
     public Reserva actualizar(
             Integer id,
             ReservaRequest request
     ) {
 
-        validarFechas(request);
+        validarFechas(
+                request
+        );
+
+
+        Reserva reservaActual =
+                repository.buscarPorId(
+                        id
+                );
+
+
+        if (reservaActual == null) {
+
+            throw new IllegalArgumentException(
+                    "La reserva indicada no existe."
+            );
+        }
+
+
+        ReservaRequest requestConCreadorOriginal =
+                new ReservaRequest(
+
+                        request.codigo(),
+
+                        request.espacioId(),
+
+                        request.solicitantePerfilId(),
+
+                        reservaActual.creadoPorUsuarioId(),
+
+                        request.grupo(),
+
+                        request.responsable(),
+
+                        request.telefono(),
+
+                        request.email(),
+
+                        request.participantes(),
+
+                        request.tipoActividad(),
+
+                        request.fechaInicio(),
+
+                        request.fechaFin(),
+
+                        request.estado(),
+
+                        request.observaciones()
+                );
+
 
         return auditoriaContexto.ejecutar(
                 () -> repository.actualizar(
                         id,
-                        request
+                        requestConCreadorOriginal
                 )
         );
     }
 
+
+    // =====================================================
+    // ELIMINAR
+    // =====================================================
 
     @Transactional
     public void eliminar(
@@ -142,14 +226,31 @@ public List<ReservaFechaOcupada> listarFechasOcupadas() {
     ) {
 
         auditoriaContexto.ejecutar(
-                () -> repository.eliminar(id)
+                () -> repository.eliminar(
+                        id
+                )
         );
     }
 
 
+    // =====================================================
+    // VALIDAR FECHAS
+    // =====================================================
+
     private void validarFechas(
             ReservaRequest request
     ) {
+
+        if (
+                request.fechaInicio() == null
+                        || request.fechaFin() == null
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Debe indicar la fecha de inicio y la fecha final."
+            );
+        }
+
 
         if (
                 !request.fechaFin()
