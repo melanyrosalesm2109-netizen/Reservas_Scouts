@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -57,6 +58,42 @@ public class ReservaService {
     ) {
 
         return repository.buscarPorId(id);
+    }
+
+
+    // =====================================================
+    // CONSULTAR DISPONIBILIDAD
+    // =====================================================
+
+    public boolean consultarDisponibilidad(
+            Integer espacioId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    ) {
+
+        if (espacioId == null || espacioId <= 0) {
+
+            throw new IllegalArgumentException(
+                    "El espacio indicado no es válido."
+            );
+        }
+
+        if (
+                fechaInicio == null ||
+                fechaFin == null ||
+                !fechaFin.isAfter(fechaInicio)
+        ) {
+
+            throw new IllegalArgumentException(
+                    "La fecha final debe ser mayor que la fecha inicial."
+            );
+        }
+
+        return repository.consultarDisponibilidad(
+                espacioId,
+                fechaInicio,
+                fechaFin
+        );
     }
 
 

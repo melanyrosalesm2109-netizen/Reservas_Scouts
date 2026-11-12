@@ -16,7 +16,11 @@ async function procesarRespuesta(response) {
   return data;
 }
 
+
+// =====================================================
 // LISTAR / FILTRAR
+// =====================================================
+
 export async function listarReservas(
   filtros = {}
 ) {
@@ -83,7 +87,36 @@ export async function listarReservas(
   return procesarRespuesta(response);
 }
 
-// BUSCAR ID
+
+// =====================================================
+// CONSULTAR DISPONIBILIDAD
+// =====================================================
+
+export async function consultarDisponibilidad(
+  espacioId,
+  fechaInicio,
+  fechaFin
+) {
+  const parametros =
+    new URLSearchParams({
+      espacioId: String(espacioId),
+      fechaInicio,
+      fechaFin
+    });
+
+  const response =
+    await fetch(
+      `${API_URL}/disponibilidad?${parametros.toString()}`
+    );
+
+  return procesarRespuesta(response);
+}
+
+
+// =====================================================
+// BUSCAR POR ID
+// =====================================================
+
 export async function buscarReservaPorId(id) {
 
   const response =
@@ -94,7 +127,11 @@ export async function buscarReservaPorId(id) {
   return procesarRespuesta(response);
 }
 
+
+// =====================================================
 // INSERTAR
+// =====================================================
+
 export async function crearReserva(datos) {
 
   const response =
@@ -116,7 +153,11 @@ export async function crearReserva(datos) {
   return procesarRespuesta(response);
 }
 
+
+// =====================================================
 // ACTUALIZAR
+// =====================================================
+
 export async function actualizarReserva(
   id,
   datos
@@ -141,7 +182,11 @@ export async function actualizarReserva(
   return procesarRespuesta(response);
 }
 
+
+// =====================================================
 // ELIMINAR
+// =====================================================
+
 export async function eliminarReserva(id) {
 
   const response =
@@ -154,4 +199,3 @@ export async function eliminarReserva(id) {
 
   return procesarRespuesta(response);
 }
-

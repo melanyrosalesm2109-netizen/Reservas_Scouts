@@ -574,10 +574,35 @@ CREATE TABLE [dbo].[roles](
 GO
 IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Administrador')
     INSERT INTO dbo.roles (nombre, descripcion, createdAt)
-    VALUES (N'Administrador', N'Acceso completo y administración del sistema.', SYSDATETIME());
+    VALUES (
+        N'Administrador',
+        N'Acceso completo y administración del sistema.',
+        SYSDATETIME()
+    );
+
 IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Usuario')
     INSERT INTO dbo.roles (nombre, descripcion, createdAt)
-    VALUES (N'Usuario', N'Puede consultar y crear reservas.', SYSDATETIME());
+    VALUES (
+        N'Usuario',
+        N'Puede crear reservas y consultar las propias.',
+        SYSDATETIME()
+    );
+
+IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Recepcionista')
+    INSERT INTO dbo.roles (nombre, descripcion, createdAt)
+    VALUES (
+        N'Recepcionista',
+        N'Gestiona reservas y pagos; consulta espacios y perfiles.',
+        SYSDATETIME()
+    );
+
+IF NOT EXISTS (SELECT 1 FROM dbo.roles WHERE nombre = N'Miembro')
+    INSERT INTO dbo.roles (nombre, descripcion, createdAt)
+    VALUES (
+        N'Miembro',
+        N'Puede crear reservas y consultar las propias.',
+        SYSDATETIME()
+    );
 GO
 /* ÍNDICE: ixActividadUsuario */
 CREATE NONCLUSTERED INDEX [ixActividadUsuario] ON [dbo].[actividad]
@@ -2760,6 +2785,77 @@ BEGIN
     RETURN 1;
 END;
 
+GO
+
+
+
+/* =========================================================
+   PROCEDIMIENTO: paReservaDisponibilidad
+   Consulta si un espacio está disponible en un rango
+   de fecha y hora.
+   ========================================================= */
+
+CREATE PROCEDURE [dbo].[paReservaDisponibilidad]
+    @pEspacioId INT,
+    @pFechaInicio DATETIME2(0),
+    @pFechaFin DATETIME2(0)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @pEspacioId IS NULL
+       OR @pEspacioId <= 0
+    BEGIN
+        THROW 50001, N'El espacio indicado no es válido.', 1;
+    END;
+
+    IF @pFechaInicio IS NULL
+       OR @pFechaFin IS NULL
+       OR @pFechaFin <= @pFechaInicio
+    BEGIN
+        THROW 50002, N'El rango de fechas no es válido.', 1;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM dbo.espacios
+        WHERE id = @pEspacioId
+    )
+    BEGIN
+        THROW 50003, N'El espacio indicado no existe.', 1;
+    END;
+
+    DECLARE @estadoEspacio NVARCHAR(20);
+
+    SELECT
+        @estadoEspacio = estado
+    FROM dbo.espacios
+    WHERE id = @pEspacioId;
+
+    SELECT
+        CAST(
+            CASE
+                WHEN @estadoEspacio <> N'DISPONIBLE'
+                    THEN 0
+
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM dbo.reservas
+                    WHERE espacioId = @pEspacioId
+                      AND estado IN (
+                          N'PENDIENTE',
+                          N'APROBADA'
+                      )
+                      AND @pFechaInicio < fechaFin
+                      AND @pFechaFin > fechaInicio
+                )
+                    THEN 0
+
+                ELSE 1
+            END
+            AS BIT
+        ) AS disponible;
+END;
 GO
 /* PROCEDIMIENTO: paReservaInsertar */
 /* ============================================================

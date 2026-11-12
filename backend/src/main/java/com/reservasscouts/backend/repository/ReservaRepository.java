@@ -17,6 +17,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class ReservaRepository {
     ) {
         this.jdbcTemplate = jdbcTemplate;
     }
+
 
     // =====================================================
     // LISTAR / FILTRAR
@@ -148,6 +151,7 @@ public class ReservaRepository {
         );
     }
 
+
     // =====================================================
     // BUSCAR POR ID
     // paReservaBuscarPorId
@@ -210,6 +214,66 @@ public class ReservaRepository {
         );
     }
 
+
+    // =====================================================
+    // CONSULTAR DISPONIBILIDAD
+    // paReservaDisponibilidad
+    // =====================================================
+
+    public boolean consultarDisponibilidad(
+            Integer espacioId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    ) {
+
+        return jdbcTemplate.execute(
+                (ConnectionCallback<Boolean>) connection -> {
+
+                    String sql =
+                            "{call dbo.paReservaDisponibilidad(?,?,?)}";
+
+                    try (CallableStatement statement =
+                                 connection.prepareCall(sql)) {
+
+                        statement.setInt(
+                                1,
+                                espacioId
+                        );
+
+                        statement.setTimestamp(
+                                2,
+                                Timestamp.valueOf(fechaInicio)
+                        );
+
+                        statement.setTimestamp(
+                                3,
+                                Timestamp.valueOf(fechaFin)
+                        );
+
+                        boolean tieneResultado =
+                                statement.execute();
+
+                        if (tieneResultado) {
+
+                            try (ResultSet rs =
+                                         statement.getResultSet()) {
+
+                                if (rs.next()) {
+
+                                    return rs.getBoolean(
+                                            "disponible"
+                                    );
+                                }
+                            }
+                        }
+
+                        return false;
+                    }
+                }
+        );
+    }
+
+
     // =====================================================
     // INSERTAR
     // paReservaInsertar
@@ -223,124 +287,126 @@ public class ReservaRepository {
                 jdbcTemplate.execute(
                         (ConnectionCallback<Integer>) connection -> {
 
-                    String sql =
-                            "{call dbo.paReservaInsertar(" +
-                            "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
+                            String sql =
+                                    "{call dbo.paReservaInsertar(" +
+                                    "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
 
-                    try (CallableStatement statement =
-                                 connection.prepareCall(sql)) {
+                            try (CallableStatement statement =
+                                         connection.prepareCall(sql)) {
 
-                        statement.setString(
-                                1,
-                                request.codigo()
-                        );
+                                statement.setString(
+                                        1,
+                                        request.codigo()
+                                );
 
-                        statement.setInt(
-                                2,
-                                request.espacioId()
-                        );
+                                statement.setInt(
+                                        2,
+                                        request.espacioId()
+                                );
 
-                        statement.setInt(
-                                3,
-                                request.solicitantePerfilId()
-                        );
+                                statement.setInt(
+                                        3,
+                                        request.solicitantePerfilId()
+                                );
 
-                        setIntegerOrNull(
-                                statement,
-                                4,
-                                request.creadoPorUsuarioId()
-                        );
+                                setIntegerOrNull(
+                                        statement,
+                                        4,
+                                        request.creadoPorUsuarioId()
+                                );
 
-                        setStringOrNull(
-                                statement,
-                                5,
-                                request.grupo()
-                        );
+                                setStringOrNull(
+                                        statement,
+                                        5,
+                                        request.grupo()
+                                );
 
-                        statement.setString(
-                                6,
-                                request.responsable()
-                        );
+                                statement.setString(
+                                        6,
+                                        request.responsable()
+                                );
 
-                        statement.setString(
-                                7,
-                                request.telefono()
-                        );
+                                statement.setString(
+                                        7,
+                                        request.telefono()
+                                );
 
-                        statement.setString(
-                                8,
-                                request.email()
-                        );
+                                statement.setString(
+                                        8,
+                                        request.email()
+                                );
 
-                        statement.setInt(
-                                9,
-                                request.participantes()
-                        );
+                                statement.setInt(
+                                        9,
+                                        request.participantes()
+                                );
 
-                        statement.setString(
-                                10,
-                                request.tipoActividad()
-                        );
+                                statement.setString(
+                                        10,
+                                        request.tipoActividad()
+                                );
 
-                        statement.setTimestamp(
-                                11,
-                                Timestamp.valueOf(
-                                        request.fechaInicio()
-                                )
-                        );
+                                statement.setTimestamp(
+                                        11,
+                                        Timestamp.valueOf(
+                                                request.fechaInicio()
+                                        )
+                                );
 
-                        statement.setTimestamp(
-                                12,
-                                Timestamp.valueOf(
-                                        request.fechaFin()
-                                )
-                        );
+                                statement.setTimestamp(
+                                        12,
+                                        Timestamp.valueOf(
+                                                request.fechaFin()
+                                        )
+                                );
 
-                        statement.setString(
-                                13,
-                                request.estado()
-                        );
+                                statement.setString(
+                                        13,
+                                        request.estado()
+                                );
 
-                        setStringOrNull(
-                                statement,
-                                14,
-                                request.observaciones()
-                        );
+                                setStringOrNull(
+                                        statement,
+                                        14,
+                                        request.observaciones()
+                                );
 
-                        // OUTPUT ID
-                        statement.registerOutParameter(
-                                15,
-                                Types.INTEGER
-                        );
+                                // OUTPUT ID
+                                statement.registerOutParameter(
+                                        15,
+                                        Types.INTEGER
+                                );
 
-                        // OUTPUT resultado
-                        statement.registerOutParameter(
-                                16,
-                                Types.TINYINT
-                        );
+                                // OUTPUT resultado
+                                statement.registerOutParameter(
+                                        16,
+                                        Types.TINYINT
+                                );
 
-                        // OUTPUT mensaje
-                        statement.registerOutParameter(
-                                17,
-                                Types.NVARCHAR
-                        );
+                                // OUTPUT mensaje
+                                statement.registerOutParameter(
+                                        17,
+                                        Types.NVARCHAR
+                                );
 
-                        statement.execute();
+                                statement.execute();
 
-                        validarResultado(
-                                statement,
-                                16,
-                                17
-                        );
+                                validarResultado(
+                                        statement,
+                                        16,
+                                        17
+                                );
 
-                        return statement.getInt(15);
-                    }
-                });
+                                return statement.getInt(15);
+                            }
+                        }
+                );
 
         return buscarPorId(
                 idGenerado
         );
     }
+
 
     // =====================================================
     // ACTUALIZAR
@@ -470,6 +536,7 @@ public class ReservaRepository {
         return buscarPorId(id);
     }
 
+
     // =====================================================
     // ELIMINAR
     // paReservaEliminar
@@ -517,6 +584,7 @@ public class ReservaRepository {
         );
     }
 
+
     // =====================================================
     // VALIDAR OUTPUT
     // =====================================================
@@ -548,6 +616,7 @@ public class ReservaRepository {
         }
     }
 
+
     // =====================================================
     // STRING NULL
     // =====================================================
@@ -559,7 +628,7 @@ public class ReservaRepository {
     ) throws SQLException {
 
         if (valor == null ||
-            valor.isBlank()) {
+                valor.isBlank()) {
 
             statement.setNull(
                     indice,
@@ -574,6 +643,7 @@ public class ReservaRepository {
             );
         }
     }
+
 
     // =====================================================
     // INTEGER NULL
@@ -601,6 +671,7 @@ public class ReservaRepository {
         }
     }
 
+
     // =====================================================
     // DATE NULL
     // =====================================================
@@ -626,6 +697,7 @@ public class ReservaRepository {
             );
         }
     }
+
 
     // =====================================================
     // MAPEAR LISTADO
@@ -665,6 +737,7 @@ public class ReservaRepository {
                 rs.getString("estado")
         );
     }
+
 
     // =====================================================
     // MAPEAR RESERVA COMPLETA

@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +33,7 @@ public class ReservaController {
         this.service = service;
         this.perfilService = perfilService;
     }
+
 
     // LISTAR / FILTRAR
     @GetMapping
@@ -57,15 +59,25 @@ public class ReservaController {
 
             @RequestParam(required = false)
             LocalDate fechaHasta,
+
             HttpSession session
     ) {
 
-        String rol = (String) session.getAttribute("usuarioRol");
-        Integer usuarioId = (Integer) session.getAttribute("usuarioId");
-        Integer creadorId = "Usuario".equalsIgnoreCase(rol)
-                || "Miembro".equalsIgnoreCase(rol)
-                ? usuarioId
-                : null;
+        String rol =
+                (String) session.getAttribute(
+                        "usuarioRol"
+                );
+
+        Integer usuarioId =
+                (Integer) session.getAttribute(
+                        "usuarioId"
+                );
+
+        Integer creadorId =
+                "Usuario".equalsIgnoreCase(rol)
+                        || "Miembro".equalsIgnoreCase(rol)
+                        ? usuarioId
+                        : null;
 
         return service.filtrar(
                 codigo,
@@ -79,6 +91,38 @@ public class ReservaController {
         );
     }
 
+
+    // =====================================================
+    // CONSULTAR DISPONIBILIDAD
+    // =====================================================
+
+    @GetMapping("/disponibilidad")
+    public Map<String, Object> consultarDisponibilidad(
+
+            @RequestParam
+            Integer espacioId,
+
+            @RequestParam
+            LocalDateTime fechaInicio,
+
+            @RequestParam
+            LocalDateTime fechaFin
+    ) {
+
+        boolean disponible =
+                service.consultarDisponibilidad(
+                        espacioId,
+                        fechaInicio,
+                        fechaFin
+                );
+
+        return Map.of(
+                "disponible",
+                disponible
+        );
+    }
+
+
     // BUSCAR POR ID
     @GetMapping("/{id}")
     public Reserva buscarPorId(
@@ -88,19 +132,46 @@ public class ReservaController {
         return service.buscarPorId(id);
     }
 
+
     // INSERTAR
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Reserva insertar(
+
             @Valid
             @RequestBody ReservaRequest request,
+
             HttpSession session
     ) {
-        Integer usuarioId = (Integer) session.getAttribute("usuarioId");
-        String rol = (String) session.getAttribute("usuarioRol");
-        if ("Usuario".equalsIgnoreCase(rol) || "Miembro".equalsIgnoreCase(rol)) {
-            var perfil = perfilService.buscarPorId(request.solicitantePerfilId());
-            if (perfil == null || !Objects.equals(perfil.usuarioId(), usuarioId)) {
+
+        Integer usuarioId =
+                (Integer) session.getAttribute(
+                        "usuarioId"
+                );
+
+        String rol =
+                (String) session.getAttribute(
+                        "usuarioRol"
+                );
+
+        if (
+                "Usuario".equalsIgnoreCase(rol)
+                        || "Miembro".equalsIgnoreCase(rol)
+        ) {
+
+            var perfil =
+                    perfilService.buscarPorId(
+                            request.solicitantePerfilId()
+                    );
+
+            if (
+                    perfil == null
+                            || !Objects.equals(
+                                    perfil.usuarioId(),
+                                    usuarioId
+                            )
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.FORBIDDEN,
                         "Solo puede reservar usando su propio perfil."
@@ -113,9 +184,11 @@ public class ReservaController {
         );
     }
 
+
     // ACTUALIZAR
     @PutMapping("/{id}")
     public Reserva actualizar(
+
             @PathVariable Integer id,
 
             @Valid
@@ -128,6 +201,7 @@ public class ReservaController {
         );
     }
 
+
     // ELIMINAR
     @DeleteMapping("/{id}")
     public Map<String, Object> eliminar(
@@ -137,7 +211,8 @@ public class ReservaController {
         service.eliminar(id);
 
         return Map.of(
-                "ok", true,
+                "ok",
+                true,
                 "mensaje",
                 "Reserva eliminada correctamente."
         );
