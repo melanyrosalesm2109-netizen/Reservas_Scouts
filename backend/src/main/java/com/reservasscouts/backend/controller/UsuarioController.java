@@ -2,6 +2,7 @@ package com.reservasscouts.backend.controller;
 
 import com.reservasscouts.backend.dto.LoginRequest;
 import com.reservasscouts.backend.dto.LoginResponse;
+import com.reservasscouts.backend.dto.RegistroUsuarioRequest;
 import com.reservasscouts.backend.dto.UsuarioRequest;
 
 import com.reservasscouts.backend.model.Rol;
@@ -21,20 +22,46 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     private final UsuarioService service;
+
     private final AuditoriaAccesoService auditoriaAcceso;
+
 
     public UsuarioController(
             UsuarioService service,
             AuditoriaAccesoService auditoriaAcceso
     ) {
+
         this.service = service;
-        this.auditoriaAcceso = auditoriaAcceso;
+
+        this.auditoriaAcceso =
+                auditoriaAcceso;
     }
+
+
+    // =====================================================
+    // REGISTRO PÚBLICO
+    // =====================================================
+
+    @PostMapping("/registro")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Usuario registrar(
+
+            @Valid
+            @RequestBody
+            RegistroUsuarioRequest request
+    ) {
+
+        return service.registrar(
+                request
+        );
+    }
+
 
     // =====================================================
     // LOGIN
@@ -42,74 +69,212 @@ public class UsuarioController {
 
     @PostMapping("/login")
     public LoginResponse login(
-            @Valid @RequestBody LoginRequest request,
+
+            @Valid
+            @RequestBody
+            LoginRequest request,
+
             HttpServletRequest httpRequest
     ) {
+
         LoginResponse usuario;
+
+
         try {
-            usuario = service.login(request);
+
+            usuario =
+                    service.login(
+                            request
+                    );
+
         } catch (IllegalArgumentException ex) {
+
+
             auditoriaAcceso.registrar(
+
                     null,
+
                     "LOGIN_FALLIDO",
+
                     httpRequest.getRemoteAddr(),
-                    httpRequest.getHeader("User-Agent")
+
+                    httpRequest.getHeader(
+                            "User-Agent"
+                    )
             );
+
+
             throw new ResponseStatusException(
+
                     HttpStatus.UNAUTHORIZED,
+
                     "Correo o contraseña incorrectos."
             );
         }
 
+
         auditoriaAcceso.registrar(
+
                 usuario.id(),
+
                 "LOGIN",
+
                 httpRequest.getRemoteAddr(),
-                httpRequest.getHeader("User-Agent")
+
+                httpRequest.getHeader(
+                        "User-Agent"
+                )
         );
-        HttpSession session = httpRequest.getSession(true);
+
+
+        HttpSession session =
+                httpRequest.getSession(
+                        true
+                );
+
+
         httpRequest.changeSessionId();
-        session.setAttribute("usuarioId", usuario.id());
-        session.setAttribute("usuarioEmail", usuario.email());
-        session.setAttribute("usuarioRolId", usuario.rolId());
-        session.setAttribute("usuarioRol", usuario.rol());
+
+
+        session.setAttribute(
+                "usuarioId",
+                usuario.id()
+        );
+
+
+        session.setAttribute(
+                "usuarioEmail",
+                usuario.email()
+        );
+
+
+        session.setAttribute(
+                "usuarioRolId",
+                usuario.rolId()
+        );
+
+
+        session.setAttribute(
+                "usuarioRol",
+                usuario.rol()
+        );
+
+
         return usuario;
     }
 
+
+    // =====================================================
+    // SESIÓN ACTUAL
+    // =====================================================
+
     @GetMapping("/sesion")
-    public LoginResponse sesion(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("usuarioId") == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión no iniciada.");
+    public LoginResponse sesion(
+            HttpServletRequest request
+    ) {
+
+        HttpSession session =
+                request.getSession(
+                        false
+                );
+
+
+        if (
+                session == null ||
+                session.getAttribute(
+                        "usuarioId"
+                ) == null
+        ) {
+
+            throw new ResponseStatusException(
+
+                    HttpStatus.UNAUTHORIZED,
+
+                    "Sesión no iniciada."
+            );
         }
 
+
         return new LoginResponse(
-                (Integer) session.getAttribute("usuarioId"),
-                (String) session.getAttribute("usuarioEmail"),
-                (Integer) session.getAttribute("usuarioRolId"),
-                (String) session.getAttribute("usuarioRol")
+
+                (Integer)
+                        session.getAttribute(
+                                "usuarioId"
+                        ),
+
+                (String)
+                        session.getAttribute(
+                                "usuarioEmail"
+                        ),
+
+                (Integer)
+                        session.getAttribute(
+                                "usuarioRolId"
+                        ),
+
+                (String)
+                        session.getAttribute(
+                                "usuarioRol"
+                        )
         );
     }
 
+
+    // =====================================================
+    // CERRAR SESIÓN
+    // =====================================================
+
     @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cerrarSesion(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
+    @ResponseStatus(
+            HttpStatus.NO_CONTENT
+    )
+    public void cerrarSesion(
+            HttpServletRequest request
+    ) {
+
+        HttpSession session =
+                request.getSession(
+                        false
+                );
+
+
+        if (
+                session == null
+        ) {
+
             return;
         }
 
-        Object usuarioId = session.getAttribute("usuarioId");
-        if (usuarioId instanceof Integer id) {
+
+        Object usuarioId =
+                session.getAttribute(
+                        "usuarioId"
+                );
+
+
+        if (
+                usuarioId
+                        instanceof Integer id
+        ) {
+
             auditoriaAcceso.registrar(
+
                     id,
+
                     "LOGOUT",
+
                     request.getRemoteAddr(),
-                    request.getHeader("User-Agent")
+
+                    request.getHeader(
+                            "User-Agent"
+                    )
             );
         }
+
+
         session.invalidate();
     }
+
 
     // =====================================================
     // LISTAR / FILTRAR USUARIOS
@@ -118,23 +283,32 @@ public class UsuarioController {
     @GetMapping
     public List<Usuario> filtrar(
 
-            @RequestParam(required = false)
+            @RequestParam(
+                    required = false
+            )
             String email,
 
-            @RequestParam(required = false)
+            @RequestParam(
+                    required = false
+            )
             Integer rolId,
 
-            @RequestParam(required = false)
+            @RequestParam(
+                    required = false
+            )
             String estado
-
     ) {
 
         return service.filtrar(
+
                 email,
+
                 rolId,
+
                 estado
         );
     }
+
 
     // =====================================================
     // LISTAR ROLES
@@ -146,33 +320,44 @@ public class UsuarioController {
         return service.listarRoles();
     }
 
+
     // =====================================================
     // BUSCAR USUARIO POR ID
     // =====================================================
 
     @GetMapping("/{id}")
     public Usuario buscarPorId(
-            @PathVariable Integer id
+
+            @PathVariable
+            Integer id
     ) {
 
-        return service.buscarPorId(id);
+        return service.buscarPorId(
+                id
+        );
     }
 
+
     // =====================================================
-    // INSERTAR USUARIO
+    // INSERTAR USUARIO DESDE ADMINISTRACIÓN
     // =====================================================
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(
+            HttpStatus.CREATED
+    )
     public Usuario insertar(
 
             @Valid
-            @RequestBody UsuarioRequest request
-
+            @RequestBody
+            UsuarioRequest request
     ) {
 
-        return service.insertar(request);
+        return service.insertar(
+                request
+        );
     }
+
 
     // =====================================================
     // ACTUALIZAR USUARIO
@@ -181,18 +366,22 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public Usuario actualizar(
 
-            @PathVariable Integer id,
+            @PathVariable
+            Integer id,
 
             @Valid
-            @RequestBody UsuarioRequest request
-
+            @RequestBody
+            UsuarioRequest request
     ) {
 
         return service.actualizar(
+
                 id,
+
                 request
         );
     }
+
 
     // =====================================================
     // ELIMINAR USUARIO
@@ -200,12 +389,18 @@ public class UsuarioController {
 
     @DeleteMapping("/{id}")
     public Map<String, Object> eliminar(
-            @PathVariable Integer id
+
+            @PathVariable
+            Integer id
     ) {
 
-        service.eliminar(id);
+        service.eliminar(
+                id
+        );
+
 
         return Map.of(
+
                 "ok",
                 true,
 

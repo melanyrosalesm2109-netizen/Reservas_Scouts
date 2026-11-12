@@ -3,6 +3,7 @@ package com.reservasscouts.backend.repository;
 import com.reservasscouts.backend.dto.ReservaRequest;
 import com.reservasscouts.backend.exception.BaseDatosException;
 import com.reservasscouts.backend.model.Reserva;
+import com.reservasscouts.backend.model.ReservaFechaOcupada;
 import com.reservasscouts.backend.model.ReservaResumen;
 
 import org.springframework.jdbc.core.ConnectionCallback;
@@ -273,6 +274,83 @@ public class ReservaRepository {
         );
     }
 
+
+
+
+
+    // =====================================================
+// FECHAS OCUPADAS
+// paReservaFechasOcupadas
+// =====================================================
+
+public List<ReservaFechaOcupada> listarFechasOcupadas() {
+
+    return jdbcTemplate.execute(
+            (ConnectionCallback<List<ReservaFechaOcupada>>) connection -> {
+
+                String sql =
+                        "{call dbo.paReservaFechasOcupadas}";
+
+
+                try (
+                        CallableStatement statement =
+                                connection.prepareCall(sql)
+                ) {
+
+                    List<ReservaFechaOcupada> fechas =
+                            new ArrayList<>();
+
+
+                    boolean tieneResultado =
+                            statement.execute();
+
+
+                    if (tieneResultado) {
+
+                        try (
+                                ResultSet rs =
+                                        statement.getResultSet()
+                        ) {
+
+                            while (rs.next()) {
+
+                                Timestamp inicio =
+                                        rs.getTimestamp(
+                                                "fechaInicio"
+                                        );
+
+                                Timestamp fin =
+                                        rs.getTimestamp(
+                                                "fechaFin"
+                                        );
+
+
+                                fechas.add(
+                                        new ReservaFechaOcupada(
+
+                                                rs.getInt(
+                                                        "espacioId"
+                                                ),
+
+                                                inicio == null
+                                                        ? null
+                                                        : inicio.toLocalDateTime(),
+
+                                                fin == null
+                                                        ? null
+                                                        : fin.toLocalDateTime()
+                                        )
+                                );
+                            }
+                        }
+                    }
+
+
+                    return fechas;
+                }
+            }
+    );
+}
 
     // =====================================================
     // INSERTAR

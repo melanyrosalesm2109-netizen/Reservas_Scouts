@@ -1,5 +1,5 @@
 package com.reservasscouts.backend.service;
-
+import com.reservasscouts.backend.model.ReservaFechaOcupada;
 import com.reservasscouts.backend.dto.ReservaRequest;
 import com.reservasscouts.backend.model.Reserva;
 import com.reservasscouts.backend.model.ReservaResumen;
@@ -95,7 +95,14 @@ public class ReservaService {
                 fechaFin
         );
     }
+// =====================================================
+// FECHAS OCUPADAS
+// =====================================================
 
+public List<ReservaFechaOcupada> listarFechasOcupadas() {
+
+    return repository.listarFechasOcupadas();
+}
 
     @Transactional
     public Reserva insertar(

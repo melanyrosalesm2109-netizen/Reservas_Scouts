@@ -3,15 +3,23 @@
 const API_URL =
   `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/reservas`;
 
+
 async function procesarRespuesta(response) {
-  const data = await response.json().catch(() => null);
+
+  const data =
+    await response
+      .json()
+      .catch(() => null);
+
 
   if (!response.ok) {
+
     throw new Error(
       data?.mensaje ||
       "Ocurrió un error al procesar la solicitud."
     );
   }
+
 
   return data;
 }
@@ -24,67 +32,89 @@ async function procesarRespuesta(response) {
 export async function listarReservas(
   filtros = {}
 ) {
+
   const parametros =
     new URLSearchParams();
 
+
   if (filtros.codigo?.trim()) {
+
     parametros.append(
       "codigo",
       filtros.codigo.trim()
     );
   }
 
+
   if (filtros.responsable?.trim()) {
+
     parametros.append(
       "responsable",
       filtros.responsable.trim()
     );
   }
 
+
   if (filtros.estado) {
+
     parametros.append(
       "estado",
       filtros.estado
     );
   }
 
+
   if (filtros.espacioId) {
+
     parametros.append(
       "espacioId",
       filtros.espacioId
     );
   }
 
+
   if (filtros.solicitantePerfilId) {
+
     parametros.append(
       "solicitantePerfilId",
       filtros.solicitantePerfilId
     );
   }
 
+
   if (filtros.fechaDesde) {
+
     parametros.append(
       "fechaDesde",
       filtros.fechaDesde
     );
   }
 
+
   if (filtros.fechaHasta) {
+
     parametros.append(
       "fechaHasta",
       filtros.fechaHasta
     );
   }
 
+
   const url =
     parametros.toString()
       ? `${API_URL}?${parametros.toString()}`
       : API_URL;
 
-  const response =
-    await fetch(url);
 
-  return procesarRespuesta(response);
+  const response =
+    await fetch(
+      url
+    );
+
+
+  return procesarRespuesta(
+    response
+  );
 }
 
 
@@ -97,19 +127,46 @@ export async function consultarDisponibilidad(
   fechaInicio,
   fechaFin
 ) {
+
   const parametros =
     new URLSearchParams({
-      espacioId: String(espacioId),
+
+      espacioId:
+        String(espacioId),
+
       fechaInicio,
+
       fechaFin
     });
+
 
   const response =
     await fetch(
       `${API_URL}/disponibilidad?${parametros.toString()}`
     );
 
-  return procesarRespuesta(response);
+
+  return procesarRespuesta(
+    response
+  );
+}
+
+
+// =====================================================
+// LISTAR FECHAS OCUPADAS
+// =====================================================
+
+export async function listarFechasOcupadas() {
+
+  const response =
+    await fetch(
+      `${API_URL}/ocupadas`
+    );
+
+
+  return procesarRespuesta(
+    response
+  );
 }
 
 
@@ -117,14 +174,19 @@ export async function consultarDisponibilidad(
 // BUSCAR POR ID
 // =====================================================
 
-export async function buscarReservaPorId(id) {
+export async function buscarReservaPorId(
+  id
+) {
 
   const response =
     await fetch(
       `${API_URL}/${id}`
     );
 
-  return procesarRespuesta(response);
+
+  return procesarRespuesta(
+    response
+  );
 }
 
 
@@ -132,7 +194,9 @@ export async function buscarReservaPorId(id) {
 // INSERTAR
 // =====================================================
 
-export async function crearReserva(datos) {
+export async function crearReserva(
+  datos
+) {
 
   const response =
     await fetch(
@@ -146,11 +210,16 @@ export async function crearReserva(datos) {
         },
 
         body:
-          JSON.stringify(datos)
+          JSON.stringify(
+            datos
+          )
       }
     );
 
-  return procesarRespuesta(response);
+
+  return procesarRespuesta(
+    response
+  );
 }
 
 
@@ -175,11 +244,16 @@ export async function actualizarReserva(
         },
 
         body:
-          JSON.stringify(datos)
+          JSON.stringify(
+            datos
+          )
       }
     );
 
-  return procesarRespuesta(response);
+
+  return procesarRespuesta(
+    response
+  );
 }
 
 
@@ -187,7 +261,9 @@ export async function actualizarReserva(
 // ELIMINAR
 // =====================================================
 
-export async function eliminarReserva(id) {
+export async function eliminarReserva(
+  id
+) {
 
   const response =
     await fetch(
@@ -197,5 +273,8 @@ export async function eliminarReserva(id) {
       }
     );
 
-  return procesarRespuesta(response);
+
+  return procesarRespuesta(
+    response
+  );
 }

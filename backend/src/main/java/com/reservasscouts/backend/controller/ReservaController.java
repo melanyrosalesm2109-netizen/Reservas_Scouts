@@ -2,16 +2,17 @@ package com.reservasscouts.backend.controller;
 
 import com.reservasscouts.backend.dto.ReservaRequest;
 import com.reservasscouts.backend.model.Reserva;
+import com.reservasscouts.backend.model.ReservaFechaOcupada;
 import com.reservasscouts.backend.model.ReservaResumen;
-import com.reservasscouts.backend.service.ReservaService;
 import com.reservasscouts.backend.service.PerfilService;
+import com.reservasscouts.backend.service.ReservaService;
 
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,16 +27,21 @@ public class ReservaController {
     private final ReservaService service;
     private final PerfilService perfilService;
 
+
     public ReservaController(
             ReservaService service,
             PerfilService perfilService
     ) {
+
         this.service = service;
         this.perfilService = perfilService;
     }
 
 
+    // =====================================================
     // LISTAR / FILTRAR
+    // =====================================================
+
     @GetMapping
     public List<ReservaResumen> filtrar(
 
@@ -68,16 +74,19 @@ public class ReservaController {
                         "usuarioRol"
                 );
 
+
         Integer usuarioId =
                 (Integer) session.getAttribute(
                         "usuarioId"
                 );
+
 
         Integer creadorId =
                 "Usuario".equalsIgnoreCase(rol)
                         || "Miembro".equalsIgnoreCase(rol)
                         ? usuarioId
                         : null;
+
 
         return service.filtrar(
                 codigo,
@@ -116,6 +125,7 @@ public class ReservaController {
                         fechaFin
                 );
 
+
         return Map.of(
                 "disponible",
                 disponible
@@ -123,23 +133,46 @@ public class ReservaController {
     }
 
 
-    // BUSCAR POR ID
-    @GetMapping("/{id}")
-    public Reserva buscarPorId(
-            @PathVariable Integer id
-    ) {
+    // =====================================================
+    // FECHAS OCUPADAS
+    // =====================================================
 
-        return service.buscarPorId(id);
+    @GetMapping("/ocupadas")
+    public List<ReservaFechaOcupada> listarFechasOcupadas() {
+
+        return service.listarFechasOcupadas();
     }
 
 
+    // =====================================================
+    // BUSCAR POR ID
+    // =====================================================
+
+    @GetMapping("/{id}")
+    public Reserva buscarPorId(
+            @PathVariable
+            Integer id
+    ) {
+
+        return service.buscarPorId(
+                id
+        );
+    }
+
+
+    // =====================================================
     // INSERTAR
+    // =====================================================
+
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(
+            HttpStatus.CREATED
+    )
     public Reserva insertar(
 
             @Valid
-            @RequestBody ReservaRequest request,
+            @RequestBody
+            ReservaRequest request,
 
             HttpSession session
     ) {
@@ -149,10 +182,12 @@ public class ReservaController {
                         "usuarioId"
                 );
 
+
         String rol =
                 (String) session.getAttribute(
                         "usuarioRol"
                 );
+
 
         if (
                 "Usuario".equalsIgnoreCase(rol)
@@ -163,6 +198,7 @@ public class ReservaController {
                     perfilService.buscarPorId(
                             request.solicitantePerfilId()
                     );
+
 
             if (
                     perfil == null
@@ -179,20 +215,28 @@ public class ReservaController {
             }
         }
 
+
         return service.insertar(
-                request.conCreador(usuarioId)
+                request.conCreador(
+                        usuarioId
+                )
         );
     }
 
 
+    // =====================================================
     // ACTUALIZAR
+    // =====================================================
+
     @PutMapping("/{id}")
     public Reserva actualizar(
 
-            @PathVariable Integer id,
+            @PathVariable
+            Integer id,
 
             @Valid
-            @RequestBody ReservaRequest request
+            @RequestBody
+            ReservaRequest request
     ) {
 
         return service.actualizar(
@@ -202,13 +246,20 @@ public class ReservaController {
     }
 
 
+    // =====================================================
     // ELIMINAR
+    // =====================================================
+
     @DeleteMapping("/{id}")
     public Map<String, Object> eliminar(
-            @PathVariable Integer id
+            @PathVariable
+            Integer id
     ) {
 
-        service.eliminar(id);
+        service.eliminar(
+                id
+        );
+
 
         return Map.of(
                 "ok",

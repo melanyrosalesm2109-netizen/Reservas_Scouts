@@ -2,12 +2,15 @@ package com.reservasscouts.backend.service;
 
 import com.reservasscouts.backend.dto.LoginRequest;
 import com.reservasscouts.backend.dto.LoginResponse;
+import com.reservasscouts.backend.dto.PerfilRequest;
+import com.reservasscouts.backend.dto.RegistroUsuarioRequest;
 import com.reservasscouts.backend.dto.UsuarioRequest;
 
 import com.reservasscouts.backend.model.Rol;
 import com.reservasscouts.backend.model.Usuario;
 import com.reservasscouts.backend.model.UsuarioLogin;
 
+import com.reservasscouts.backend.repository.PerfilRepository;
 import com.reservasscouts.backend.repository.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +29,8 @@ public class UsuarioService {
 
     private final UsuarioRepository repository;
 
+    private final PerfilRepository perfilRepository;
+
     private final AuditoriaContextoService auditoriaContexto;
 
 
@@ -39,10 +44,14 @@ public class UsuarioService {
 
     public UsuarioService(
             UsuarioRepository repository,
+            PerfilRepository perfilRepository,
             AuditoriaContextoService auditoriaContexto
     ) {
 
         this.repository = repository;
+
+        this.perfilRepository =
+                perfilRepository;
 
         this.auditoriaContexto =
                 auditoriaContexto;
@@ -75,12 +84,112 @@ public class UsuarioService {
             Integer id
     ) {
 
-        return repository.buscarPorId(id);
+        return repository.buscarPorId(
+                id
+        );
     }
 
 
     // =====================================================
-    // INSERTAR USUARIO
+    // REGISTRO PÚBLICO
+    // =====================================================
+
+    @Transactional
+    public Usuario registrar(
+            RegistroUsuarioRequest request
+    ) {
+
+        String email =
+                request.email()
+                        .trim()
+                        .toLowerCase();
+
+
+        if (
+                !request.password()
+                        .equals(
+                                request.confirmarPassword()
+                        )
+        ) {
+
+            throw new IllegalArgumentException(
+                    "Las contraseñas no coinciden."
+            );
+        }
+
+
+        Rol rolUsuario =
+                repository
+                        .listarRoles()
+                        .stream()
+                        .filter(
+                                rol ->
+                                        "Usuario"
+                                                .equalsIgnoreCase(
+                                                        rol.nombre()
+                                                )
+                        )
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "No existe el rol Usuario en el sistema."
+                                        )
+                        );
+
+
+        String hash =
+                passwordEncoder.encode(
+                        request.password()
+                );
+
+
+        Usuario usuario =
+                repository.insertar(
+                        rolUsuario.id(),
+                        email,
+                        hash,
+                        "ACTIVO"
+                );
+
+
+        PerfilRequest perfilRequest =
+                new PerfilRequest(
+
+                        usuario.id(),
+
+                        request.nombre()
+                                .trim(),
+
+                        limpiarTexto(
+                                request.identificacion()
+                        ),
+
+                        limpiarTexto(
+                                request.telefono()
+                        ),
+
+                        email,
+
+                        "Persona",
+
+                        limpiarTexto(
+                                request.direccion()
+                        )
+                );
+
+
+        perfilRepository.insertar(
+                perfilRequest
+        );
+
+
+        return usuario;
+    }
+
+
+    // =====================================================
+    // INSERTAR USUARIO DESDE ADMINISTRACIÓN
     // =====================================================
 
     @Transactional
@@ -116,12 +225,18 @@ public class UsuarioService {
 
 
         return auditoriaContexto.ejecutar(
-                () -> repository.insertar(
-                        request.rolId(),
-                        request.email().trim(),
-                        hash,
-                        request.estado()
-                )
+                () ->
+                        repository.insertar(
+
+                                request.rolId(),
+
+                                request.email()
+                                        .trim(),
+
+                                hash,
+
+                                request.estado()
+                        )
         );
     }
 
@@ -139,10 +254,6 @@ public class UsuarioService {
         final String hash;
 
 
-        /*
-         * Si la contraseña viene vacía,
-         * se conserva la contraseña anterior.
-         */
         if (
                 request.password() != null &&
                 !request.password().isBlank()
@@ -170,13 +281,20 @@ public class UsuarioService {
 
 
         return auditoriaContexto.ejecutar(
-                () -> repository.actualizar(
-                        id,
-                        request.rolId(),
-                        request.email().trim(),
-                        hash,
-                        request.estado()
-                )
+                () ->
+                        repository.actualizar(
+
+                                id,
+
+                                request.rolId(),
+
+                                request.email()
+                                        .trim(),
+
+                                hash,
+
+                                request.estado()
+                        )
         );
     }
 
@@ -191,7 +309,10 @@ public class UsuarioService {
     ) {
 
         auditoriaContexto.ejecutar(
-                () -> repository.eliminar(id)
+                () ->
+                        repository.eliminar(
+                                id
+                        )
         );
     }
 
@@ -215,18 +336,20 @@ public class UsuarioService {
     ) {
 
         String identificador =
-                request.email().trim();
+                request.email()
+                        .trim();
 
 
-        /*
-         * Si se utiliza uno de los usuarios reales
-         * creados en el motor SQL Server,
-         * validamos sus credenciales directamente
-         * contra SQL Server.
-         */
         if (
-                "reservas_app".equalsIgnoreCase(identificador) ||
-                "reservas_consulta".equalsIgnoreCase(identificador)
+                "reservas_app"
+                        .equalsIgnoreCase(
+                                identificador
+                        )
+                        ||
+                        "reservas_consulta"
+                                .equalsIgnoreCase(
+                                        identificador
+                                )
         ) {
 
             return loginBaseDatos(
@@ -236,17 +359,15 @@ public class UsuarioService {
         }
 
 
-        /*
-         * Se conserva el login anterior para no romper
-         * las cuentas existentes de dbo.usuarios.
-         */
         UsuarioLogin usuario =
                 repository.buscarParaLogin(
                         identificador
                 );
 
 
-        if (usuario == null) {
+        if (
+                usuario == null
+        ) {
 
             throw new IllegalArgumentException(
                     "Usuario o contraseña incorrectos."
@@ -255,9 +376,10 @@ public class UsuarioService {
 
 
         if (
-                !"ACTIVO".equalsIgnoreCase(
-                        usuario.estado()
-                )
+                !"ACTIVO"
+                        .equalsIgnoreCase(
+                                usuario.estado()
+                        )
         ) {
 
             throw new IllegalArgumentException(
@@ -268,12 +390,16 @@ public class UsuarioService {
 
         boolean passwordCorrecto =
                 passwordEncoder.matches(
+
                         request.password(),
+
                         usuario.passwordHash()
                 );
 
 
-        if (!passwordCorrecto) {
+        if (
+                !passwordCorrecto
+        ) {
 
             throw new IllegalArgumentException(
                     "Usuario o contraseña incorrectos."
@@ -282,9 +408,13 @@ public class UsuarioService {
 
 
         return new LoginResponse(
+
                 usuario.id(),
+
                 usuario.email(),
+
                 usuario.rolId(),
+
                 usuario.rol()
         );
     }
@@ -299,33 +429,26 @@ public class UsuarioService {
             String password
     ) {
 
-        /*
-         * Intentamos abrir una conexión real
-         * a SQL Server utilizando las credenciales
-         * ingresadas en el login.
-         */
         try (
                 Connection connection =
                         DriverManager.getConnection(
+
                                 jdbcUrl,
+
                                 usuarioBd,
+
                                 password
                         )
         ) {
 
-
-            /*
-             * Si SQL Server acepta las credenciales,
-             * asociamos el usuario del motor con
-             * una cuenta existente de la aplicación.
-             */
             String emailAplicacion;
 
 
             if (
-                    "reservas_app".equalsIgnoreCase(
-                            usuarioBd
-                    )
+                    "reservas_app"
+                            .equalsIgnoreCase(
+                                    usuarioBd
+                            )
             ) {
 
                 emailAplicacion =
@@ -344,7 +467,9 @@ public class UsuarioService {
                     );
 
 
-            if (usuario == null) {
+            if (
+                    usuario == null
+            ) {
 
                 throw new IllegalArgumentException(
                         "No existe una cuenta de aplicación asociada."
@@ -353,9 +478,10 @@ public class UsuarioService {
 
 
             if (
-                    !"ACTIVO".equalsIgnoreCase(
-                            usuario.estado()
-                    )
+                    !"ACTIVO"
+                            .equalsIgnoreCase(
+                                    usuario.estado()
+                            )
             ) {
 
                 throw new IllegalArgumentException(
@@ -364,15 +490,14 @@ public class UsuarioService {
             }
 
 
-            /*
-             * Mostramos en la interfaz el usuario
-             * real utilizado para iniciar sesión
-             * en SQL Server.
-             */
             return new LoginResponse(
+
                     usuario.id(),
+
                     usuarioBd,
+
                     usuario.rolId(),
+
                     usuario.rol()
             );
 
@@ -383,5 +508,26 @@ public class UsuarioService {
                     "Usuario o contraseña de base de datos incorrectos."
             );
         }
+    }
+
+
+    // =====================================================
+    // LIMPIAR CAMPOS OPCIONALES
+    // =====================================================
+
+    private String limpiarTexto(
+            String valor
+    ) {
+
+        if (
+                valor == null ||
+                valor.isBlank()
+        ) {
+
+            return null;
+        }
+
+
+        return valor.trim();
     }
 }

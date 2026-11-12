@@ -3,6 +3,7 @@ package com.reservasscouts.backend.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -10,7 +11,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.io.IOException;
 
 @Component
-public class AutorizacionInterceptor implements HandlerInterceptor {
+public class AutorizacionInterceptor
+        implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(
@@ -19,21 +21,53 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
             Object handler
     ) throws IOException {
 
-        if (HttpMethod.OPTIONS.matches(request.getMethod())
-                || !request.getRequestURI().startsWith("/api/")
-                || request.getRequestURI().equals("/api/prueba-db")
-                || request.getRequestURI().equals("/api/usuarios/login")
-                || request.getRequestURI().equals("/api/usuarios/sesion")
-                || request.getRequestURI().equals("/api/usuarios/logout")) {
+        String method =
+                request.getMethod();
+
+        String path =
+                request.getRequestURI();
+
+
+        // =====================================================
+        // RUTAS PÚBLICAS
+        // =====================================================
+
+        boolean registroPublico =
+                HttpMethod.POST.matches(method)
+                        && path.equals(
+                                "/api/usuarios/registro"
+                        );
+
+
+        if (
+                HttpMethod.OPTIONS.matches(method)
+                        || !path.startsWith("/api/")
+                        || path.equals("/api/prueba-db")
+                        || path.equals("/api/usuarios/login")
+                        || path.equals("/api/usuarios/sesion")
+                        || path.equals("/api/usuarios/logout")
+                        || registroPublico
+        ) {
+
             return true;
         }
 
-        HttpSession session = request.getSession(false);
+
+        // =====================================================
+        // VALIDAR SESIÓN
+        // =====================================================
+
+        HttpSession session =
+                request.getSession(false);
+
 
         Object usuarioId =
                 session == null
                         ? null
-                        : session.getAttribute("usuarioId");
+                        : session.getAttribute(
+                                "usuarioId"
+                        );
+
 
         if (!(usuarioId instanceof Integer)) {
 
@@ -46,14 +80,28 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
             return false;
         }
 
+
+        // =====================================================
+        // VALIDAR ORIGEN
+        // =====================================================
+
         String origin =
-                request.getHeader("Origin");
+                request.getHeader(
+                        "Origin"
+                );
+
 
         if (
                 origin != null
-                        && !origin.equals("http://localhost:5173")
-                        && !origin.equals("http://127.0.0.1:5173")
-                        && !origin.equals("https://reservas-scouts-basedatos.vercel.app")
+                        && !origin.equals(
+                                "http://localhost:5173"
+                        )
+                        && !origin.equals(
+                                "http://127.0.0.1:5173"
+                        )
+                        && !origin.equals(
+                                "https://reservas-scouts-basedatos.vercel.app"
+                        )
         ) {
 
             responder(
@@ -65,74 +113,27 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
             return false;
         }
 
+
+        // =====================================================
+        // ROL
+        // =====================================================
+
         String rol =
-                (String) session.getAttribute("usuarioRol");
-
-        if ("Administrador".equalsIgnoreCase(rol)) {
-            request.setAttribute("usuarioId", usuarioId);
-            return true;
-        }
-
-        String method =
-                request.getMethod();
-
-        String path =
-                request.getRequestURI();
-
-        boolean recepcionista =
-                "Recepcionista".equalsIgnoreCase(rol);
-
-        boolean usuarioRegular =
-                "Miembro".equalsIgnoreCase(rol)
-                        || "Usuario".equalsIgnoreCase(rol);
-
-        boolean metodoCrud =
-                HttpMethod.GET.matches(method)
-                        || HttpMethod.POST.matches(method)
-                        || HttpMethod.PUT.matches(method)
-                        || HttpMethod.DELETE.matches(method);
-
-        boolean recursoGestionRecepcionista =
-                path.equals("/api/reservas")
-                        || path.startsWith("/api/reservas/")
-                        || path.equals("/api/pagos")
-                        || path.startsWith("/api/pagos/");
-
-        boolean recursoConsultaRecepcionista =
-                path.equals("/api/espacios")
-                        || path.startsWith("/api/espacios/")
-                        || path.equals("/api/perfiles")
-                        || path.startsWith("/api/perfiles/");
-
-        boolean accesoRecepcionista =
-                recepcionista
-                        && (
-                        (metodoCrud && recursoGestionRecepcionista)
-                                || (
-                                HttpMethod.GET.matches(method)
-                                        && recursoConsultaRecepcionista
-                        )
+                (String) session.getAttribute(
+                        "usuarioRol"
                 );
 
-        boolean accesoRegular =
-                usuarioRegular
-                        && (
-                        (
-                                HttpMethod.GET.matches(method)
-                                        && (
-                                        path.equals("/api/reservas")
-                                                || path.equals("/api/espacios")
-                                                || path.startsWith("/api/espacios/")
-                                                || path.equals("/api/perfiles/opciones-reserva")
-                                )
-                        )
-                                || (
-                                HttpMethod.POST.matches(method)
-                                        && path.equals("/api/reservas")
-                        )
-                );
 
-        if (accesoRecepcionista || accesoRegular) {
+        // =====================================================
+        // ADMINISTRADOR
+        // =====================================================
+
+        if (
+                "Administrador"
+                        .equalsIgnoreCase(
+                                rol
+                        )
+        ) {
 
             request.setAttribute(
                     "usuarioId",
@@ -141,6 +142,165 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
 
             return true;
         }
+
+
+        // =====================================================
+        // RECEPCIONISTA
+        // =====================================================
+
+        boolean recepcionista =
+                "Recepcionista"
+                        .equalsIgnoreCase(
+                                rol
+                        );
+
+
+        boolean metodoCrud =
+                HttpMethod.GET.matches(method)
+                        || HttpMethod.POST.matches(method)
+                        || HttpMethod.PUT.matches(method)
+                        || HttpMethod.DELETE.matches(method);
+
+
+        boolean recursoGestionRecepcionista =
+                path.equals(
+                        "/api/reservas"
+                )
+                        || path.startsWith(
+                                "/api/reservas/"
+                        )
+                        || path.equals(
+                                "/api/pagos"
+                        )
+                        || path.startsWith(
+                                "/api/pagos/"
+                        );
+
+
+        boolean recursoConsultaRecepcionista =
+                path.equals(
+                        "/api/espacios"
+                )
+                        || path.startsWith(
+                                "/api/espacios/"
+                        )
+                        || path.equals(
+                                "/api/perfiles"
+                        )
+                        || path.startsWith(
+                                "/api/perfiles/"
+                        );
+
+
+        boolean accesoRecepcionista =
+                recepcionista
+                        && (
+                        (
+                                metodoCrud
+                                        && recursoGestionRecepcionista
+                        )
+                                || (
+                                HttpMethod.GET.matches(method)
+                                        && recursoConsultaRecepcionista
+                        )
+                );
+
+
+        // =====================================================
+        // USUARIO / MIEMBRO
+        // =====================================================
+
+        boolean usuarioRegular =
+                "Usuario"
+                        .equalsIgnoreCase(
+                                rol
+                        )
+                        || "Miembro"
+                        .equalsIgnoreCase(
+                                rol
+                        );
+
+
+        boolean consultaReservasPropias =
+                HttpMethod.GET.matches(method)
+                        && path.equals(
+                                "/api/reservas"
+                        );
+
+
+        boolean consultaDisponibilidad =
+                HttpMethod.GET.matches(method)
+                        && path.equals(
+                                "/api/reservas/disponibilidad"
+                        );
+
+
+        boolean consultaFechasOcupadas =
+                HttpMethod.GET.matches(method)
+                        && path.equals(
+                                "/api/reservas/ocupadas"
+                        );
+
+
+        boolean consultaEspacios =
+                HttpMethod.GET.matches(method)
+                        && (
+                        path.equals(
+                                "/api/espacios"
+                        )
+                                || path.startsWith(
+                                "/api/espacios/"
+                        )
+                );
+
+
+        boolean consultaPerfilPropio =
+                HttpMethod.GET.matches(method)
+                        && path.equals(
+                                "/api/perfiles/opciones-reserva"
+                        );
+
+
+        boolean crearReserva =
+                HttpMethod.POST.matches(method)
+                        && path.equals(
+                                "/api/reservas"
+                        );
+
+
+        boolean accesoRegular =
+                usuarioRegular
+                        && (
+                        consultaReservasPropias
+                                || consultaDisponibilidad
+                                || consultaFechasOcupadas
+                                || consultaEspacios
+                                || consultaPerfilPropio
+                                || crearReserva
+                );
+
+
+        // =====================================================
+        // PERMITIR
+        // =====================================================
+
+        if (
+                accesoRecepcionista
+                        || accesoRegular
+        ) {
+
+            request.setAttribute(
+                    "usuarioId",
+                    usuarioId
+            );
+
+            return true;
+        }
+
+
+        // =====================================================
+        // BLOQUEAR
+        // =====================================================
 
         responder(
                 response,
@@ -151,21 +311,31 @@ public class AutorizacionInterceptor implements HandlerInterceptor {
         return false;
     }
 
+
+    // =====================================================
+    // RESPUESTA JSON
+    // =====================================================
+
     private void responder(
             HttpServletResponse response,
             int status,
             String mensaje
     ) throws IOException {
 
-        response.setStatus(status);
+        response.setStatus(
+                status
+        );
+
 
         response.setContentType(
                 "application/json"
         );
 
+
         response.setCharacterEncoding(
                 "UTF-8"
         );
+
 
         response
                 .getWriter()
