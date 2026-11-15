@@ -1,0 +1,33 @@
+.notificaciones-page { color: #12384b; }
+.notificaciones-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.notificaciones-header span { color: #a3752d; letter-spacing: 2px; font-weight: 700; font-size: 11px; }
+.notificaciones-header h1 { display: flex; align-items: center; gap: 10px; font-family: Georgia,serif; font-size: 36px; margin: 10px 0; }
+.notificaciones-header p,.notificaciones-sync { font-size: 13px; line-height: 1.6; color: #61788b; }
+.notificaciones-page button,.notificacion-acciones a { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 14px; min-height: 40px; border: 1px solid #d9d4ca; background: white; color: #12384b; border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none; }
+.notificaciones-page button:disabled { opacity: .5; cursor: not-allowed; }
+.notificaciones-tabs { display: flex; flex-wrap: wrap; gap: 9px; margin: 24px 0; }
+.notificaciones-tabs [aria-selected=true] { color: white; background: #17475e; border-color: #17475e; }
+.notificaciones-tabs span { border-radius: 20px; padding: 2px 8px; background: #b4c4cd40; font-weight: 700; }
+.notificacion-card { background: white; border: 1px solid #e5e0d7; padding: 22px; margin-bottom: 16px; border-radius: 14px; box-shadow: 0 5px 18px #12384b08; }
+.notificacion-cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.notificacion-cabecera strong { font-size: 12px; color: #a3752d; }
+.notificacion-cabecera h2 { font-family: Georgia,serif; font-size: 23px; margin: 8px 0; }
+.notificacion-cabecera p,.notificacion-revision { font-size: 12px; line-height: 1.6; color: #61788b; }
+.notificacion-estado { font-size: 11px; padding: 7px 10px; background: #edf2f4; border-radius: 20px; white-space: nowrap; }
+.notificacion-estado.pendiente { background: #fff2d9; color: #936318; }
+.notificacion-detalles { display: flex; flex-wrap: wrap; gap: 8px 25px; margin: 8px 0; }
+.notificacion-detalles p { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+.notificacion-acciones { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.notificacion-acciones .notificacion-aprobar { background: #17475e; border-color: #17475e; color: white; }
+.notificaciones-error,.notificaciones-exito,.notificaciones-ayuda { padding: 13px 16px; border-radius: 9px; font-size: 13px; line-height: 1.6; }
+.notificaciones-error { background: #fbe9e7; color: #97362e; }
+.notificaciones-exito { background: #e6f3eb; color: #205b44; }
+.notificaciones-ayuda { background: #edf2f4; }
+.notificaciones-vacio { text-align: center; padding: 65px 20px; background: white; border: 1px solid #e5e0d7; border-radius: 14px; color: #61788b; }
+.notificaciones-vacio h2 { color: #12384b; font-size: 20px; }
+.notificacion-rechazo { border-top: 1px solid #e5e0d7; margin-top: 18px; padding-top: 18px; }
+.notificacion-rechazo label { font-size: 13px; display: block; font-weight: 700; }
+.notificacion-rechazo textarea { width: 100%; box-sizing: border-box; min-height: 80px; padding: 10px; margin-top: 8px; border: 1px solid #d9d4ca; border-radius: 8px; }
+.notificacion-rechazo p { font-size: 12px; }
+.notificacion-rechazo button { margin-right: 8px; }
+@media(max-width:600px) { .notificaciones-header,.notificacion-cabecera { flex-direction: column; align-items: flex-start; } .notificacion-card { padding: 16px; } .notificaciones-tabs button { flex: 1 0 40%; } }

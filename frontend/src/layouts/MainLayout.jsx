@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Building2, UsersRound, CreditCard,
-  ShieldCheck, Activity, HardDrive, LogOut, TentTree, Menu, ChevronDown
+  ShieldCheck, Activity, HardDrive, LogOut, TentTree, Menu, ChevronDown, Bell
 } from "lucide-react";
 import { cerrarSesion as eliminarSesion } from "../services/authService";
 import { useAuth } from "../context/useAuth";
 import "./MainLayout.css";
+import { useNotificaciones } from "../context/useNotificaciones";
+import { esPendiente } from "../services/notificacionService";
 
 const secciones = [
+  { ruta: "/notificaciones", nombre: "Notificaciones", icono: Bell, roles: ["Administrador", "Recepcionista"] },
   { ruta: "/dashboard", nombre: "Dashboard", icono: LayoutDashboard, roles: ["Administrador"] },
   { ruta: "/reservas", nombre: "Reservas", icono: CalendarDays },
   { ruta: "/espacios", nombre: "Espacios", icono: Building2 },
@@ -24,6 +27,9 @@ function MainLayout() {
   const { pathname } = useLocation();
   const { usuario, setUsuario } = useAuth();
   const menuRef = useRef(null);
+  const esPersonal = ["Administrador", "Recepcionista"].includes(usuario?.rol);
+  const bandeja = useNotificaciones(esPersonal);
+  const pendientes = bandeja.notificaciones.filter(esPendiente).length;
   const [errorCerrarSesion, setErrorCerrarSesion] = useState("");
   const opciones = secciones.filter((seccion) => !seccion.roles || seccion.roles.includes(usuario?.rol));
   const seccionActual = opciones.find((seccion) => seccion.ruta === pathname)?.nombre || "Menú";
@@ -73,7 +79,7 @@ function MainLayout() {
             <div><h2>Reservas</h2><span>SCOUTS</span></div>
           </div>
           <nav className="topbar-desktop-nav" aria-label="Navegación principal">
-            {opciones.map(({ ruta, nombre }) => (
+            {opciones.filter(opcion => opcion.ruta !== "/notificaciones").map(({ ruta, nombre }) => (
               <NavLink key={ruta} to={ruta}>{nombre}</NavLink>
             ))}
           </nav>
@@ -95,6 +101,9 @@ function MainLayout() {
             </nav>
           </details>
           <div className="topbar-account">
+            {esPersonal && <NavLink to="/notificaciones" className="topbar-notifications" aria-label={"Notificaciones: " + pendientes + " pagos pendientes"} title="Notificaciones">
+              <Bell size={21} aria-hidden="true" />{pendientes > 0 && <span>{pendientes > 99 ? "99+" : pendientes}</span>}
+            </NavLink>}
             <div className="topbar-user">
               <div className="topbar-avatar">{inicial}</div>
               <div className="topbar-user-info">
@@ -109,7 +118,7 @@ function MainLayout() {
         </div>
         {errorCerrarSesion && <p className="topbar-error" role="alert">{errorCerrarSesion}</p>}
       </header>
-      <main className="main-content"><Outlet /></main>
+      <main className="main-content"><Outlet context={{ bandeja }} /></main>
     </div>
   );
 }

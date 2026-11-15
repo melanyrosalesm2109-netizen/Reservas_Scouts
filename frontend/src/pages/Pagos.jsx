@@ -27,6 +27,8 @@ import {
 import { useAuth } from "../context/useAuth";
 
 import "./Pagos.css";
+import ComprobanteViewer from "../components/ComprobanteViewer";
+import { verificarPago } from "../services/reservaPagoService";
 
 const pagoVacio = {
   reservaId: "",
@@ -52,6 +54,8 @@ function Pagos() {
   const puedeGestionarPagos =
     usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
 
+  const [revisando, setRevisando] = useState(null);
+  const [pagoComprobante, setPagoComprobante] = useState(null);
   const [pagos, setPagos] =
     useState([]);
 
@@ -169,6 +173,16 @@ function Pagos() {
     await cargarInicial();
   };
 
+  const revisar = async (pago, aprobar) => {
+    if (!window.confirm(aprobar ? "Confirmas que el pago es correcto?" : "Rechazar el pago y cancelar la reserva?")) return;
+    const motivo = aprobar ? null : window.prompt("Motivo del rechazo (obligatorio):");
+    if (!aprobar && !motivo?.trim()) return;
+    setRevisando(pago.id); setError("");
+    try { await verificarPago(pago.id, aprobar, motivo); await cargarInicial(); setMensaje(aprobar ? "Pago verificado y reserva aprobada." : "Pago rechazado y reserva cancelada."); }
+    catch (err) { setError(err.message); }
+    finally { setRevisando(null); }
+  };
+  const abrirComprobante = pago => setPagoComprobante(pago);
   const abrirNuevo = () => {
 
     setEditandoId(null);
@@ -447,6 +461,7 @@ function Pagos() {
   return (
 
     <div className="pagos-page">
+      {pagoComprobante && <ComprobanteViewer pago={pagoComprobante} onCerrar={() => setPagoComprobante(null)} />}
 
       {/* CABECERA */}
 
@@ -811,6 +826,11 @@ function Pagos() {
 
                         {puedeGestionarPagos ? (
                         <div className="pago-actions">
+                          {pago.comprobante === "Comprobante adjunto" && <button type="button" className="pago-review" onClick={() => abrirComprobante(pago)}>Ver comprobante</button>}
+                          {pago.estado === "PENDIENTE" && ["SINPE Móvil", "Transferencia bancaria", "Efectivo"].includes(pago.metodo) && <>
+                            <button type="button" className="pago-review" disabled={revisando === pago.id} onClick={() => revisar(pago, true)}>Verificar pago</button>
+                            <button type="button" disabled={revisando === pago.id} onClick={() => revisar(pago, false)}>Rechazar</button>
+                          </>}
 
                           <button
                             type="button"

@@ -1159,3 +1159,11 @@
     width: 100%;
   }
 }
+.reservation-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.reservation-fields:disabled { opacity: .55; }
+.reservation-fields:disabled input, .reservation-fields:disabled select, .reservation-fields:disabled textarea { cursor: not-allowed; }
+.reservation-save:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.reserva-bloqueada { padding: 12px 16px; margin-bottom: 18px; background: #fce9e7; border: 1px solid #eac3be; border-radius: 10px; color: #943c35; font-size: 13px; line-height: 1.5; }
+
+.reserva-solicitante-propio { padding: 12px; border: 1px solid #d9d4ca; border-radius: 8px; background: #f0f5f3; }
+.reserva-solicitante-propio p { margin: 5px 0 0; font-size: 12px; color: #536c78; line-height: 1.5; }

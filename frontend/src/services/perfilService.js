@@ -153,3 +153,9 @@ export async function eliminarPerfil(
   return procesarRespuesta(response);
 }
 
+
+export async function completarPerfilPropio(datos) {
+  return procesarRespuesta(await fetch(API_URL + "/propio", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos)
+  }));
+}

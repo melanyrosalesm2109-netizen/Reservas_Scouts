@@ -943,21 +943,15 @@ function Perfiles() {
 
                 <div className="perfil-field">
 
-                  <label>
-                    Usuario ID
+                  <label htmlFor="perfil-id">
+                    ID del perfil
                   </label>
-
                   <input
-                    type="number"
-                    name="usuarioId"
-                    min="1"
-                    placeholder="Opcional"
-                    value={
-                      formulario.usuarioId
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    id="perfil-id"
+                    type="text"
+                    value={editandoId ?? "Se asigna al guardar"}
+                    disabled
+                    readOnly
                   />
 
                 </div>

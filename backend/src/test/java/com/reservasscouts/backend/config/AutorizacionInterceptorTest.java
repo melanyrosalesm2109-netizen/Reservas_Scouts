@@ -91,6 +91,24 @@ class AutorizacionInterceptorTest {
         assertThat(interceptor.preHandle(request, response, new Object())).isTrue();
     }
 
+    @Test
+    void pagosYComprobantesSoloSeRevisanConRolesAutorizados() throws Exception {
+        for (String rol : new String[]{"Usuario", "Miembro"}) {
+            assertThat(permite("GET", "/api/notificaciones", rol)).isFalse();
+            assertThat(permite("POST", "/api/reservas/confirmar", rol)).isTrue();
+            assertThat(permite("POST", "/api/reservas/bloqueos", rol)).isTrue();
+            assertThat(permite("GET", "/api/reservas/bloqueos", rol)).isTrue();
+            assertThat(permite("DELETE", "/api/reservas/bloqueos/11111111-1111-1111-1111-111111111111", rol)).isTrue();
+            assertThat(permite("POST", "/api/pagos/1/verificar", rol)).isFalse();
+            assertThat(permite("GET", "/api/pagos/1/comprobante", rol)).isFalse();
+        }
+        for (String rol : new String[]{"Recepcionista", "Administrador"}) {
+            assertThat(permite("GET", "/api/notificaciones", rol)).isTrue();
+            assertThat(permite("POST", "/api/pagos/1/verificar", rol)).isTrue();
+            assertThat(permite("GET", "/api/pagos/1/comprobante", rol)).isTrue();
+        }
+    }
+
     private MockHttpServletRequest request(String method, String uri) {
         MockHttpServletRequest request = new MockHttpServletRequest(method, uri);
         request.setRequestURI(uri);

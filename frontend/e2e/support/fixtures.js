@@ -93,6 +93,13 @@ export async function createReservationFixture(api, fixture) {
 }
 
 export async function cleanupReservationFixture(api, fixture) {
+  if (fixture.reservation) {
+    const listado = await api.get(API_ROOT + "/pagos?reservaId=" + fixture.reservation.id);
+    await requireOk(listado, "List fixture payments");
+    for (const pago of await listado.json()) {
+      await requireOk(await api.delete(API_ROOT + "/pagos/" + pago.id), "Delete fixture payment");
+    }
+  }
   const resources = [
     fixture.reservation && [`${API_ROOT}/reservas/${fixture.reservation.id}`, "reservation"],
     fixture.profile && [`${API_ROOT}/perfiles/${fixture.profile.idPerfil}`, "profile"],

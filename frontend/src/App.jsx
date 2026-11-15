@@ -11,6 +11,7 @@ import Reservas from "./pages/Reservas";
 import Espacios from "./pages/Espacios";
 import Perfiles from "./pages/Perfiles";
 import Pagos from "./pages/Pagos";
+import Notificaciones from "./pages/Notificaciones";
 import Usuarios from "./pages/Usuarios";
 import Auditoria from "./pages/Auditoria";
 import Respaldos from "./pages/Respaldos";
@@ -58,6 +59,8 @@ function App() {
             </ProtectedRoute>
           }
         >
+
+          <Route path="/notificaciones" element={<ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}><Notificaciones /></ProtectedRoute>} />
 
           <Route
             path="/dashboard"

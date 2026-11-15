@@ -79,6 +79,13 @@ public class PagoService {
             PagoRequest request
     ) {
 
+        var actual = repository.buscarPorId(id);
+        if (actual != null && ("Comprobante adjunto".equals(actual.comprobante())
+                || "Pago en efectivo al llegar.".equals(actual.notas())
+                || "Pago simulado aprobado. Sin cobro real.".equals(actual.notas()))
+                && !actual.estado().equals(request.estado())) {
+            throw new IllegalArgumentException("Usa la opcion Verificar pago o Rechazar para actualizar tambien la reserva.");
+        }
         return auditoriaContexto.ejecutar(
                 () ->
                         repository.actualizar(

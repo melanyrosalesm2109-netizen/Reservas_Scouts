@@ -178,6 +178,7 @@ public class AutorizacionInterceptor
 
 
         boolean recursoConsultaRecepcionista =
+                path.equals("/api/notificaciones") ||
                 path.equals(
                         "/api/espacios"
                 )
@@ -276,6 +277,10 @@ public class AutorizacionInterceptor
                                 || consultaFechasOcupadas
                                 || consultaEspacios
                                 || consultaPerfilPropio
+                                || (HttpMethod.POST.matches(method) && path.equals("/api/perfiles/propio"))
+                                || (path.equals("/api/reservas/confirmar") && HttpMethod.POST.matches(method))
+                                || (path.equals("/api/reservas/bloqueos") && (HttpMethod.GET.matches(method) || HttpMethod.POST.matches(method)))
+                                || (path.matches("/api/reservas/bloqueos/[a-fA-F0-9-]{36}") && HttpMethod.DELETE.matches(method))
                                 || crearReserva
                 );
 

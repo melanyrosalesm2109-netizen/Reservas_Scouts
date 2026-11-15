@@ -26,15 +26,18 @@ public class ReservaController {
 
     private final ReservaService service;
     private final PerfilService perfilService;
+    private final com.reservasscouts.backend.service.ReservaPagoService operacion;
 
 
     public ReservaController(
             ReservaService service,
-            PerfilService perfilService
+            PerfilService perfilService,
+            com.reservasscouts.backend.service.ReservaPagoService operacion
     ) {
 
         this.service = service;
         this.perfilService = perfilService;
+        this.operacion = operacion;
     }
 
 
@@ -115,7 +118,8 @@ public class ReservaController {
             LocalDateTime fechaInicio,
 
             @RequestParam
-            LocalDateTime fechaFin
+            LocalDateTime fechaFin,
+            HttpSession session
     ) {
 
         boolean disponible =
@@ -128,7 +132,8 @@ public class ReservaController {
 
         return Map.of(
                 "disponible",
-                disponible
+                disponible && operacion.bloqueadas((Integer) session.getAttribute("usuarioId")).stream()
+                    .noneMatch(b -> b.espacioId().equals(espacioId) && fechaInicio.isBefore(b.fechaFin()) && fechaFin.isAfter(b.fechaInicio()))
         );
     }
 
@@ -215,6 +220,10 @@ public class ReservaController {
             }
         }
 
+
+        if ("Usuario".equalsIgnoreCase(rol) || "Miembro".equalsIgnoreCase(rol)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirma la reserva con su metodo de pago.");
+        }
 
         return service.insertar(
                 request.conCreador(

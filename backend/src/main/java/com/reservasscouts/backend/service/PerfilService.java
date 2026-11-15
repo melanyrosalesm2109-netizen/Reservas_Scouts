@@ -3,6 +3,7 @@ package com.reservasscouts.backend.service;
 import com.reservasscouts.backend.dto.PerfilRequest;
 import com.reservasscouts.backend.model.Perfil;
 import com.reservasscouts.backend.repository.PerfilRepository;
+import com.reservasscouts.backend.repository.UsuarioRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,15 +15,18 @@ public class PerfilService {
 
     private final PerfilRepository repository;
     private final AuditoriaContextoService auditoriaContexto;
+    private final UsuarioRepository usuarios;
 
 
     public PerfilService(
             PerfilRepository repository,
-            AuditoriaContextoService auditoriaContexto
+            AuditoriaContextoService auditoriaContexto,
+            UsuarioRepository usuarios
     ) {
 
         this.repository = repository;
         this.auditoriaContexto = auditoriaContexto;
+        this.usuarios = usuarios;
     }
 
 
@@ -58,10 +62,21 @@ public class PerfilService {
     public Perfil insertar(
             PerfilRequest request
     ) {
-
+        PerfilRequest datos = request;
+        if (request.usuarioId() == null && "Persona".equals(request.tipoPerfil())) {
+            var coincidencias = usuarios.filtrar(request.correoContacto().trim(), null, null).stream()
+                    .filter(u -> u.email().equalsIgnoreCase(request.correoContacto().trim()))
+                    .toList();
+            if (coincidencias.size() == 1) {
+                datos = new PerfilRequest(coincidencias.get(0).id(), request.nombre(),
+                        request.identificacion(), request.telefono(), request.correoContacto(),
+                        request.tipoPerfil(), request.direccion());
+            }
+        }
+        PerfilRequest perfilVinculado = datos;
         return auditoriaContexto.ejecutar(
                 () -> repository.insertar(
-                        request
+                        perfilVinculado
                 )
         );
     }

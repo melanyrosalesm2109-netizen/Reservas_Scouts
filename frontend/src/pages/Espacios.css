@@ -827,3 +827,11 @@
 .espacio-gallery-controls { position: absolute; bottom: 10px; right: 10px; display: flex; align-items: center; gap: 9px; padding: 4px; border-radius: 24px; background: #0e3047c9; color: white; font-size: 11px; }
 .espacio-gallery-controls button { width: 28px; height: 28px; border: none; border-radius: 50%; background: white; color: #12364b; font-size: 23px; cursor: pointer; line-height: 1; }
 .espacio-gallery-controls button:focus-visible { outline: 3px solid #d6b267; outline-offset: 2px; }
+
+.espacio-reservas-link { color: inherit; text-decoration: none; }
+.espacio-reservas-link:hover { text-decoration: underline; }
+.espacio-booking-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.espacio-booking-actions a { padding: 10px 14px; border: 1px solid #17475e; border-radius: 8px; color: #17475e; font-size: 13px; font-weight: 700; text-decoration: none; text-align: center; flex: 1; }
+.espacio-booking-actions a.espacio-booking-primary { background: #17475e; color: white; }
+.espacio-booking-actions a:hover { box-shadow: 0 2px 7px #12384b30; }
+.espacio-booking-actions span { font-size: 12px; color: #7c6851; }

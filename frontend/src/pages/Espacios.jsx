@@ -18,6 +18,7 @@ import {
   eliminarEspacio
 } from "../services/espacioService";
 import { useAuth } from "../context/useAuth";
+import { Link } from "react-router-dom";
 
 import "./Espacios.css";
 
@@ -510,7 +511,7 @@ function Espacios() {
                 <GaleriaEspacio key={espacio.imagen} espacio={espacio} />
                 <div className="espacio-card-body">
                   <span className="espacio-card-type">{tipo}</span>
-                  <h2>{espacio.nombre}</h2>
+                  <h2><Link className="espacio-reservas-link" to={`/reservas?espacioId=${espacio.id}`}>{espacio.nombre}</Link></h2>
                   <p className="espacio-card-location"><MapPin size={15} />{espacio.ubicacion}</p>
                   <p className="espacio-card-capacity"><Users size={16} />Hasta {espacio.capacidad} personas</p>
                   <div className="espacio-card-footer">
@@ -518,7 +519,11 @@ function Espacios() {
                     {puedeAdministrarEspacios ? <div className="space-actions">
                       <button type="button" className="space-edit" onClick={() => abrirEditar(espacio)} aria-label={"Editar " + espacio.nombre} title="Editar espacio"><Pencil size={16} /></button>
                       <button type="button" className="space-delete" onClick={() => borrarEspacio(espacio)} aria-label={"Eliminar " + espacio.nombre} title="Eliminar espacio"><Trash2 size={16} /></button>
-                    </div> : <span className="espacio-readonly">Solo lectura</span>}
+                    </div> : null}
+                  </div>
+                  <div className="espacio-booking-actions">
+                    <Link to={`/reservas?espacioId=${espacio.id}`}>Ver reservas</Link>
+                    {espacio.estado === "DISPONIBLE" ? <Link className="espacio-booking-primary" to={`/reservas?espacioId=${espacio.id}&nueva=1`}>Reservar</Link> : <span>No disponible para reservar</span>}
                   </div>
                 </div>
               </article>

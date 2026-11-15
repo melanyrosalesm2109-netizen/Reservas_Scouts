@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -251,6 +252,14 @@ public class ReservaService {
             );
         }
 
+
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Costa_Rica"));
+        if (request.fechaInicio().toLocalDate().isBefore(hoy)
+                || request.fechaFin().toLocalDate().isBefore(hoy)) {
+            throw new IllegalArgumentException(
+                    "Solo se permiten reservas desde la fecha actual en adelante."
+            );
+        }
 
         if (
                 !request.fechaFin()

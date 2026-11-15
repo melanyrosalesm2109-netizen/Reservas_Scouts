@@ -56,20 +56,23 @@ test.describe("regular user reservation flow", () => {
 
     const reservationForm = page.locator("form.reservation-form");
     await expect(reservationForm).toBeVisible();
-    await reservationForm.locator('[name="codigo"]').fill(fixture.codigo);
     await reservationForm.locator('[name="espacioId"]').selectOption(String(fixture.space.id));
-    await reservationForm.locator('[name="solicitantePerfilId"]').selectOption(String(fixture.profile.idPerfil));
     await reservationForm.locator('[name="responsable"]').fill("Responsable E2E");
-    await reservationForm.locator('[name="grupo"]').fill("Grupo de prueba temporal");
     await reservationForm.locator('[name="telefono"]').fill("55501011");
     await reservationForm.locator('[name="email"]').fill(fixture.email);
     await reservationForm.locator('[name="participantes"]').fill("12");
     await reservationForm.locator('[name="tipoActividad"]').fill("Prueba automatizada");
     await reservationForm.locator('[name="fechaInicio"]').fill(localDateTime(48));
     await reservationForm.locator('[name="fechaFin"]').fill(localDateTime(50));
-    await page.getByRole("button", { name: "Crear reserva", exact: true }).click();
+    await reservationForm.locator("#reserva-metodo").selectOption("Efectivo");
+    const confirmacion = page.waitForResponse(response => response.url().endsWith("/api/reservas/confirmar") && response.request().method() === "POST");
+    await page.getByRole("button", { name: "Enviar solicitud", exact: true }).click();
+    const respuesta = await confirmacion;
+    expect(respuesta.status()).toBe(201);
+    fixture.reservation = await respuesta.json();
+    fixture.codigo = fixture.reservation.codigo;
 
-    await expect(page.getByText("Reserva creada correctamente.")).toBeVisible();
+    await expect(page.getByText("Solicitud de reserva enviada correctamente.")).toBeVisible();
     const reservationRow = page.getByRole("row").filter({ hasText: fixture.codigo });
     await expect(reservationRow).toBeVisible();
 

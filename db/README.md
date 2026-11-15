@@ -94,3 +94,58 @@ Consulte el [diccionario de datos](./diccionarioDatos.md), el
 [diagrama relacional](./diagrama-relacional.md) y el
 [documento de arquitectura de datos](../.github/modernize/assessment/engines/facts/data-architecture.md)
 para el esquema y sus relaciones.
+
+## Calendario de disponibilidad
+
+En bases existentes, ejecutar `migrations/007_fechas_ocupadas.sql`. Instala el
+procedimiento `paReservaFechasOcupadas` y su permiso de ejecuci?n para
+`reservas_app`. Devuelve ?nicamente el espacio y los horarios de reservas
+pendientes o aprobadas; las canceladas y finalizadas no bloquean el calendario.
+El instalador inicial tambi?n incluye este procedimiento.
+
+## Reservas con pago y plazo de dos minutos
+
+En una base existente, aplicar `009_disponibilidad_reservas.sql` y
+`010_reserva_pago_bloqueo.sql` desde `migrations/` en ese orden. El instalador
+inicial incorpora el flujo completo. Los bloqueos usan el reloj UTC de SQL
+Server y duran 120 segundos; los vencidos no bloquean nuevas solicitudes.
+Al confirmar se guardan reserva, pago y comprobante en una sola transaccion.
+Los comprobantes admiten PDF, PNG y JPG hasta 5 MB y se descargan solo desde
+las rutas de pagos de administracion o recepcion. Se guardan dentro de SQL Server.
+
+SINPE y transferencia generan reserva y pago pendientes. Verificar el pago
+aprueba la reserva; rechazarlo la cancela y libera el horario. Efectivo confirma
+la reserva y queda pendiente para la llegada. La tarjeta solo simula un pago:
+numero `4242 4242 4242 4242`, codigo `123` y vencimiento vigente. No hay cobros
+reales ni almacenamiento de numero de tarjeta o codigo.
+
+## Datos de demostracion actualizados
+
+Ejecutar `sqlcmd -S localhost -E -C -I -b -f 65001 -i db/demo_actualizado.sql`
+y luego `powershell -File db/demo_comprobantes.ps1` desde la raiz del proyecto.
+Los ejemplos `DEMO-FLUJO-001` a `DEMO-FLUJO-006` cubren efectivo al llegar,
+SINPE y transferencia pendientes, tarjeta simulada aprobada, SINPE verificado
+y transferencia rechazada. Los adjuntos PNG dicen expresamente que no son
+pagos reales. Repetir los scripts no duplica reservas, pagos o comprobantes.
+La reserva personal previa al flujo de pagos se conserva sin asignarle un
+metodo de pago supuesto.
+
+### Comprobantes IA y vista previa
+
+`output/comprobantes-demo/` contiene dos imagenes generadas con IA.
+`output/pdf/` contiene dos comprobantes PDF ficticios generados por
+`node db/generar_pdfs_demo.cjs`. Para adjuntarlos a sus registros DEMO
+correspondientes, ejecutar `powershell -File db/adjuntar_comprobantes_ia.ps1`.
+Solo se sustituyen adjuntos de cuatro pagos DEMO y se conservan sus estados.
+Desde Pagos, Ver comprobante abre un visor con descarga para PDF e imagenes.
+
+## Notificaciones compartidas
+
+Aplicar `migrations/011_notificaciones_compartidas.sql` en bases existentes.
+La bandeja de administracion y recepcion se calcula a partir de los estados
+de reserva y pago: al resolver un pago deja de estar pendiente para todas las
+cuentas. La pantalla consulta cada cinco segundos y al recuperar el foco.
+La tabla `pagoRevisiones` conserva cuenta revisora, fecha UTC y motivo.
+El rechazo exige motivo y cancela la reserva; el efectivo solo se registra
+como recibido desde el dia de llegada. El procedimiento bloquea la reserva
+y el pago durante la revision y rechaza intentos duplicados.

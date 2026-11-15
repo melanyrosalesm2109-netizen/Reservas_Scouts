@@ -45,20 +45,34 @@ public class PerfilController {
                 : null;
 
         return jdbcTemplate.query(
-                "{call dbo.paPerfilOpcionesReserva(?)}",
+                "{call dbo.paPerfilOpcionesReserva(?, ?)}",
                 statement -> {
                     if (usuarioId == null) {
                         statement.setNull(1, Types.INTEGER);
                     } else {
                         statement.setInt(1, usuarioId);
                     }
+                    statement.setInt(2, (Integer) session.getAttribute("usuarioId"));
                 },
                 (rs, rowNum) -> new PerfilOpcionReserva(
                         rs.getInt("idPerfil"),
                         rs.getString("nombre"),
-                        rs.getString("tipoPerfil")
+                        rs.getString("tipoPerfil"),
+                        rs.getObject("usuarioId", Integer.class),
+                        rs.getString("telefono"),
+                        rs.getString("correoContacto")
                 )
         );
+    }
+
+    @PostMapping("/propio")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Perfil completarPerfilPropio(@Valid @RequestBody PerfilRequest request, HttpSession session) {
+        Integer usuarioId = (Integer) session.getAttribute("usuarioId");
+        var existentes = service.filtrar(null, null, null, null, usuarioId);
+        if (!existentes.isEmpty()) return existentes.get(0);
+        return service.insertar(new PerfilRequest(usuarioId, request.nombre(), null,
+                request.telefono(), request.correoContacto(), "Persona", null));
     }
 
     @GetMapping

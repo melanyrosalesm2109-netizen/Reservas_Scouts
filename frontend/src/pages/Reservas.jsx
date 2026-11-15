@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 
 
@@ -26,13 +26,7 @@ import {
 
   Users,
 
-  MapPin,
 
-  CircleDollarSign,
-
-  CheckCircle2,
-
-  XCircle
 
 } from "lucide-react";
 
@@ -44,13 +38,11 @@ import {
 
   buscarReservaPorId,
 
-  crearReserva,
 
   actualizarReserva,
 
   eliminarReserva,
 
-  consultarDisponibilidad,
 
   listarFechasOcupadas
 
@@ -68,6 +60,7 @@ import {
 
 import {
 
+  completarPerfilPropio,
   listarPerfilesParaReserva
 
 } from "../services/perfilService";
@@ -79,6 +72,10 @@ import { useAuth } from "../context/useAuth";
 
 
 import "./Reservas.css";
+import { useSearchParams } from "react-router-dom";
+import CalendarioDisponibilidad from "../components/CalendarioDisponibilidad";
+import PagoReserva from "../components/PagoReserva";
+import { confirmarReserva } from "../services/reservaPagoService";
 
 
 
@@ -142,23 +139,33 @@ const filtrosVacios = {
 
 
 
-const consultaVacia = {
+function datosSolicitante(perfil, usuario) {
+  return {
+    solicitantePerfilId: perfil?.idPerfil || "",
+    responsable: perfil?.tipoPerfil === "Persona" ? perfil.nombre : "",
+    grupo: perfil && perfil.tipoPerfil !== "Persona" ? perfil.nombre : "",
+    telefono: perfil?.telefono || "",
+    email: perfil?.correoContacto || (!perfil || Number(perfil.usuarioId) === Number(usuario?.id) ? usuario?.email : "") || ""
+  };
+}
 
-  fechaInicio: "",
-
-  fechaFin: ""
-
-};
-
-
-
-
+function perfilDelUsuario(perfiles, usuario, esUsuarioFinal) {
+  return perfiles.find(perfil => perfil.usuarioId != null && Number(perfil.usuarioId) === Number(usuario?.id))
+    || (esUsuarioFinal ? perfiles.find(p => p.tipoPerfil === "Persona") || perfiles[0] : null);
+}
 
 function Reservas() {
+  const [searchParams] = useSearchParams();
+  const espacioEnlace = searchParams.get("espacioId") || "";
+  const codigoEnlace = searchParams.get("codigo") || "";
+  const nuevaEnlace = searchParams.get("nueva") === "1";
+  const enlaceProcesado = useRef("");
 
 
 
   const { usuario } = useAuth();
+  const [pagoReserva, setPagoReserva] = useState(null);
+  const [guardando, setGuardando] = useState(false);
 
 
 
@@ -250,33 +257,7 @@ function Reservas() {
 
 
 
-  const [
 
-    consultaFechas,
-
-    setConsultaFechas
-
-  ] = useState(consultaVacia);
-
-
-
-  const [
-
-    disponibilidadEspacios,
-
-    setDisponibilidadEspacios
-
-  ] = useState({});
-
-
-
-  const [
-
-    consultandoDisponibilidad,
-
-    setConsultandoDisponibilidad
-
-  ] = useState(false);
 
 
 
@@ -316,15 +297,13 @@ function Reservas() {
 
       ] = await Promise.all([
 
-        listarReservas(),
+        listarReservas({ espacioId: espacioEnlace, codigo: codigoEnlace }),
 
         listarEspacios(),
 
         listarPerfilesParaReserva(),
 
-        esUsuarioFinal
-          ? listarFechasOcupadas()
-          : Promise.resolve([])
+        listarFechasOcupadas()
 
       ]);
 
@@ -339,6 +318,18 @@ function Reservas() {
       setPerfiles(perfilesData);
 
       setFechasOcupadas(fechasOcupadasData);
+      const claveEnlace = espacioEnlace + ":" + nuevaEnlace + ":" + codigoEnlace;
+      if (enlaceProcesado.current !== claveEnlace) {
+        enlaceProcesado.current = claveEnlace;
+        setFiltros({ ...filtrosVacios, espacioId: espacioEnlace, codigo: codigoEnlace });
+        const seleccionado = espaciosData.find(e => String(e.id) === espacioEnlace);
+        if (nuevaEnlace && seleccionado?.estado === "DISPONIBLE") {
+          setEditandoId(null);
+          setFormulario({ ...reservaVacia, codigo: "RES-" + Date.now(), espacioId: seleccionado.id,
+            ...datosSolicitante(perfilDelUsuario(perfilesData, usuario, esUsuarioFinal), usuario) });
+          setModalAbierto(true);
+        }
+      }
 
 
 
@@ -366,7 +357,7 @@ function Reservas() {
 
 
 
-  }, [esUsuarioFinal]);
+  }, [esUsuarioFinal, espacioEnlace, nuevaEnlace, usuario, codigoEnlace]);
 
 
 
@@ -536,214 +527,6 @@ function Reservas() {
 
 
 
-  const handleConsultaFechas = (
-
-    event
-
-  ) => {
-
-
-
-    const {
-
-      name,
-
-      value
-
-    } = event.target;
-
-
-
-    setConsultaFechas(
-
-      (anterior) => ({
-
-        ...anterior,
-
-        [name]: value
-
-      })
-
-    );
-
-
-
-    setDisponibilidadEspacios({});
-
-  };
-
-
-
-
-
-  const consultarEspaciosDisponibles = async (
-
-    event
-
-  ) => {
-
-
-
-    event?.preventDefault();
-
-
-
-    setError("");
-
-    setMensaje("");
-
-
-
-    if (
-
-      !consultaFechas.fechaInicio ||
-
-      !consultaFechas.fechaFin
-
-    ) {
-
-
-
-      setError(
-
-        "Debe indicar la fecha y hora de inicio y final."
-
-      );
-
-
-
-      return;
-
-    }
-
-
-
-    if (
-
-      new Date(consultaFechas.fechaFin) <=
-
-      new Date(consultaFechas.fechaInicio)
-
-    ) {
-
-
-
-      setError(
-
-        "La fecha final debe ser mayor que la fecha inicial."
-
-      );
-
-
-
-      return;
-
-    }
-
-
-
-    try {
-
-
-
-      setConsultandoDisponibilidad(true);
-
-
-
-      const resultados = {};
-
-
-
-      await Promise.all(
-
-        espacios.map(async (espacio) => {
-
-
-
-          if (
-
-            espacio.estado !== "DISPONIBLE"
-
-          ) {
-
-
-
-            resultados[espacio.id] = false;
-
-            return;
-
-          }
-
-
-
-          const respuesta =
-
-            await consultarDisponibilidad(
-
-              espacio.id,
-
-              consultaFechas.fechaInicio,
-
-              consultaFechas.fechaFin
-
-            );
-
-
-
-          resultados[espacio.id] =
-
-            Boolean(respuesta?.disponible);
-
-        })
-
-      );
-
-
-
-      setDisponibilidadEspacios(
-
-        resultados
-
-      );
-
-
-
-    } catch (err) {
-
-
-
-      setError(
-
-        err.message ||
-
-        "No se pudo consultar la disponibilidad."
-
-      );
-
-
-
-    } finally {
-
-
-
-      setConsultandoDisponibilidad(false);
-
-    }
-
-  };
-
-
-
-
-
-  // =====================================================
-
-  // NUEVA RESERVA
-
-  // =====================================================
-
-
-
   const generarCodigoReserva = () => {
 
 
@@ -768,15 +551,7 @@ function Reservas() {
 
 
 
-    const perfilPorDefecto =
-
-      esUsuarioFinal &&
-
-      perfiles.length === 1
-
-        ? perfiles[0].idPerfil
-
-        : "";
+    const perfilPorDefecto = perfilDelUsuario(perfiles, usuario, esUsuarioFinal);
 
 
 
@@ -798,33 +573,19 @@ function Reservas() {
 
       espacioId:
 
-        espacio?.id || "",
+        espacio?.id || espacioEnlace || "",
 
 
 
-      solicitantePerfilId:
-
-        perfilPorDefecto,
+      ...datosSolicitante(perfilPorDefecto, usuario),
 
 
 
-      fechaInicio:
-
-        esUsuarioFinal
-
-          ? consultaFechas.fechaInicio
-
-          : "",
+      fechaInicio: "",
 
 
 
-      fechaFin:
-
-        esUsuarioFinal
-
-          ? consultaFechas.fechaFin
-
-          : "",
+      fechaFin: "",
 
 
 
@@ -1074,6 +835,11 @@ function Reservas() {
 
 
 
+    if (name === "solicitantePerfilId") {
+      const perfil = perfiles.find(p => Number(p.idPerfil) === Number(value));
+      setFormulario(anterior => ({ ...anterior, ...datosSolicitante(perfil, usuario) }));
+      return;
+    }
     if (name === "espacioId") {
 
 
@@ -1248,6 +1014,27 @@ function Reservas() {
 
 
 
+  const inicioDiaSeleccionado = formulario.fechaInicio
+    ? new Date(formulario.fechaInicio.slice(0, 10) + "T00:00") : null;
+  const finDiaSeleccionado = formulario.fechaFin
+    ? new Date(formulario.fechaFin.slice(0, 10) + "T00:00")
+    : inicioDiaSeleccionado && new Date(inicioDiaSeleccionado);
+  if (finDiaSeleccionado) {
+    if (!formulario.fechaFin || formulario.fechaFin.slice(11, 16) !== "00:00") {
+      finDiaSeleccionado.setDate(finDiaSeleccionado.getDate() + 1);
+    }
+  }
+  const diaOcupado = editandoId === null && inicioDiaSeleccionado && finDiaSeleccionado &&
+    fechasOcupadas.some(reserva => Number(reserva.espacioId) === Number(formulario.espacioId) &&
+      new Date(reserva.fechaInicio) < finDiaSeleccionado && new Date(reserva.fechaFin) > inicioDiaSeleccionado);
+  const fechaActual = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Costa_Rica" }).format(new Date());
+  const fechaAnterior = Boolean(
+    (formulario.fechaInicio && formulario.fechaInicio.slice(0, 10) < fechaActual) ||
+    (formulario.fechaFin && formulario.fechaFin.slice(0, 10) < fechaActual)
+  );
+  const formularioBloqueado = Boolean(fechaAnterior || diaOcupado ||
+    (espacioSeleccionado && espacioSeleccionado.estado !== "DISPONIBLE"));
+
   const guardarReserva = async (
 
     event
@@ -1257,6 +1044,16 @@ function Reservas() {
 
 
     event.preventDefault();
+    if (guardando) return;
+    if (editandoId === null && (!pagoReserva?.valido || pagoReserva.rango !== (formulario.espacioId + "|" + formulario.fechaInicio + "|" + formulario.fechaFin))) {
+      setError("Selecciona un horario disponible y completa el pago antes de que termine el plazo.");
+      return;
+    }
+
+    if (formularioBloqueado) {
+      setError("Este espacio no est? disponible en las fechas seleccionadas. Selecciona un d?a libre en el calendario.");
+      return;
+    }
 
 
 
@@ -1308,11 +1105,7 @@ function Reservas() {
 
 
 
-    if (
-
-      !formulario.solicitantePerfilId
-
-    ) {
+    if (!formulario.solicitantePerfilId && !esUsuarioFinal) {
 
 
 
@@ -1452,71 +1245,19 @@ function Reservas() {
 
 
 
+    setGuardando(true);
     try {
 
 
 
-      /*
-       * Para Usuario/Miembro volvemos a consultar justo antes
-       * de guardar, porque otro usuario pudo reservar el mismo
-       * espacio después de la consulta inicial.
-       */
-
-      if (
-
-        esUsuarioFinal &&
-
-        editandoId === null
-
-      ) {
-
-
-
-        const respuestaDisponibilidad =
-
-          await consultarDisponibilidad(
-
-            Number(formulario.espacioId),
-
-            formulario.fechaInicio,
-
-            formulario.fechaFin
-
-          );
-
-
-
-        if (
-
-          !respuestaDisponibilidad?.disponible
-
-        ) {
-
-
-
-          cerrarModal();
-
-          setDisponibilidadEspacios({});
-
-          setError(
-            "No se pudo completar la reserva porque ese horario ya está ocupado. Seleccione otra fecha u horario."
-          );
-
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-
-          return;
-
-        }
-
+      let solicitanteId = formulario.solicitantePerfilId;
+      if (esUsuarioFinal && !solicitanteId) {
+        const perfil = await completarPerfilPropio({ nombre: formulario.responsable.trim(),
+          telefono: formulario.telefono.trim(), correoContacto: formulario.email.trim(), tipoPerfil: "Persona" });
+        solicitanteId = perfil.idPerfil;
+        setPerfiles(anteriores => [...anteriores.filter(p => p.idPerfil !== perfil.idPerfil), perfil]);
+        setFormulario(anterior => ({ ...anterior, solicitantePerfilId: perfil.idPerfil }));
       }
-
-
-
-
-
       const datos = {
 
 
@@ -1539,14 +1280,7 @@ function Reservas() {
 
         solicitantePerfilId:
 
-          Number(
-
-            formulario.solicitantePerfilId
-
-          ),
-
-
-
+          Number(solicitanteId),
         creadoPorUsuarioId:
 
           null,
@@ -1667,11 +1401,7 @@ function Reservas() {
 
 
 
-        await crearReserva(
-
-          datos
-
-        );
+        await confirmarReserva(datos, pagoReserva);
 
 
 
@@ -1703,10 +1433,6 @@ function Reservas() {
 
 
 
-      setDisponibilidadEspacios({});
-
-
-
       await cargarInicial();
 
 
@@ -1727,6 +1453,8 @@ function Reservas() {
 
       );
 
+    } finally {
+      setGuardando(false);
     }
 
   };
@@ -2703,12 +2431,8 @@ function Reservas() {
 
 
 
-        {puedeGestionarReservas && (
-
-
-
+        {(puedeGestionarReservas || esUsuarioFinal) && (
           <button
-
             className="reservas-primary-button"
 
             onClick={() => abrirNueva()}
@@ -2756,1066 +2480,6 @@ function Reservas() {
           {error}
 
         </div>
-
-      )}
-
-
-
-
-
-      {esUsuarioFinal && (
-
-
-
-        <section
-
-          style={{
-
-            background: "#ffffff",
-
-            border: "1px solid #e8e2d8",
-
-            borderRadius: "18px",
-
-            padding: "24px",
-
-            marginBottom: "24px",
-
-            boxShadow:
-
-              "0 10px 28px rgba(21, 52, 72, 0.06)"
-
-          }}
-
-        >
-
-
-
-          <div
-
-            style={{
-
-              marginBottom: "20px"
-
-            }}
-
-          >
-
-            <h2
-
-              style={{
-
-                margin: 0,
-
-                color: "#123b55"
-
-              }}
-
-            >
-
-              Consultar disponibilidad
-
-            </h2>
-
-
-
-            <p
-
-              style={{
-
-                margin:
-
-                  "6px 0 0 0",
-
-                color: "#6f7780"
-
-              }}
-
-            >
-
-              Selecciona la fecha y hora para ver qué espacios están libres.
-
-            </p>
-
-          </div>
-
-
-
-
-
-          <form
-
-            onSubmit={
-
-              consultarEspaciosDisponibles
-
-            }
-
-            style={{
-
-              display: "grid",
-
-              gridTemplateColumns:
-
-                "repeat(auto-fit, minmax(220px, 1fr))",
-
-              gap: "14px",
-
-              alignItems: "end",
-
-              marginBottom: "24px"
-
-            }}
-
-          >
-
-
-
-            <div>
-
-
-
-              <label
-
-                style={{
-
-                  display: "block",
-
-                  fontWeight: 700,
-
-                  marginBottom: "7px",
-
-                  color: "#263847"
-
-                }}
-
-              >
-
-                Fecha y hora de inicio
-
-              </label>
-
-
-
-              <input
-
-                type="datetime-local"
-
-                name="fechaInicio"
-
-                value={
-
-                  consultaFechas.fechaInicio
-
-                }
-
-                onChange={
-
-                  handleConsultaFechas
-
-                }
-
-                required
-
-                style={{
-
-                  width: "100%",
-
-                  boxSizing:
-
-                    "border-box",
-
-                  minHeight: "46px",
-
-                  padding:
-
-                    "10px 12px",
-
-                  border:
-
-                    "1px solid #d9d4ca",
-
-                  borderRadius:
-
-                    "10px",
-
-                  background:
-
-                    "#fff"
-
-                }}
-
-              />
-
-
-
-            </div>
-
-
-
-
-
-            <div>
-
-
-
-              <label
-
-                style={{
-
-                  display: "block",
-
-                  fontWeight: 700,
-
-                  marginBottom: "7px",
-
-                  color: "#263847"
-
-                }}
-
-              >
-
-                Fecha y hora final
-
-              </label>
-
-
-
-              <input
-
-                type="datetime-local"
-
-                name="fechaFin"
-
-                value={
-
-                  consultaFechas.fechaFin
-
-                }
-
-                onChange={
-
-                  handleConsultaFechas
-
-                }
-
-                required
-
-                style={{
-
-                  width: "100%",
-
-                  boxSizing:
-
-                    "border-box",
-
-                  minHeight: "46px",
-
-                  padding:
-
-                    "10px 12px",
-
-                  border:
-
-                    "1px solid #d9d4ca",
-
-                  borderRadius:
-
-                    "10px",
-
-                  background:
-
-                    "#fff"
-
-                }}
-
-              />
-
-
-
-            </div>
-
-
-
-
-
-            <button
-
-              type="submit"
-
-              className="reservas-primary-button"
-
-              disabled={
-
-                consultandoDisponibilidad
-
-              }
-
-              style={{
-
-                minHeight: "46px"
-
-              }}
-
-            >
-
-              <Search size={18} />
-
-
-
-              {consultandoDisponibilidad
-
-                ? "Consultando..."
-
-                : "Consultar disponibilidad"}
-
-            </button>
-
-
-
-          </form>
-
-
-
-
-
-          <div
-
-            style={{
-
-              display: "grid",
-
-              gridTemplateColumns:
-
-                "repeat(auto-fit, minmax(270px, 1fr))",
-
-              gap: "18px"
-
-            }}
-
-          >
-
-
-
-            {espacios.map(
-
-              (espacio) => {
-
-
-
-                const ocupadasDelEspacio =
-                  fechasOcupadas
-                    .filter(
-                      fecha =>
-                        fecha.espacioId ===
-                        espacio.id
-                    )
-                    .slice(0, 3);
-
-
-
-                const resultado =
-
-                  disponibilidadEspacios[
-
-                    espacio.id
-
-                  ];
-
-
-
-                const fueConsultado =
-
-                  Object.prototype.hasOwnProperty.call(
-
-                    disponibilidadEspacios,
-
-                    espacio.id
-
-                  );
-
-
-
-                const disponible =
-
-                  fueConsultado &&
-
-                  resultado === true;
-
-
-
-                return (
-
-
-
-                  <article
-
-                    key={espacio.id}
-
-                    style={{
-
-                      border:
-
-                        "1px solid #e4ded4",
-
-                      borderRadius:
-
-                        "16px",
-
-                      overflow: "hidden",
-
-                      background:
-
-                        "#fffaf4"
-
-                    }}
-
-                  >
-
-
-
-                    {espacio.imagen ? (
-
-
-
-                      <img
-
-                        src={espacio.imagen}
-
-                        alt={espacio.nombre}
-
-                        style={{
-
-                          width: "100%",
-
-                          height: "170px",
-
-                          objectFit:
-
-                            "cover",
-
-                          display: "block"
-
-                        }}
-
-                      />
-
-
-
-                    ) : (
-
-
-
-                      <div
-
-                        style={{
-
-                          height: "130px",
-
-                          display: "flex",
-
-                          alignItems:
-
-                            "center",
-
-                          justifyContent:
-
-                            "center",
-
-                          background:
-
-                            "#123b55",
-
-                          color: "#e4b65e"
-
-                        }}
-
-                      >
-
-                        <Building2
-
-                          size={42}
-
-                        />
-
-                      </div>
-
-                    )}
-
-
-
-
-
-                    <div
-
-                      style={{
-
-                        padding: "18px"
-
-                      }}
-
-                    >
-
-
-
-                      <h3
-
-                        style={{
-
-                          margin:
-
-                            "0 0 8px 0",
-
-                          color:
-
-                            "#123b55",
-
-                          fontSize:
-
-                            "20px"
-
-                        }}
-
-                      >
-
-                        {espacio.nombre}
-
-                      </h3>
-
-
-
-
-
-                      {espacio.descripcion && (
-
-
-
-                        <p
-
-                          style={{
-
-                            margin:
-
-                              "0 0 14px 0",
-
-                            color:
-
-                              "#6f7780",
-
-                            lineHeight:
-
-                              1.45
-
-                          }}
-
-                        >
-
-                          {espacio.descripcion}
-
-                        </p>
-
-                      )}
-
-
-
-
-
-                      <div
-
-                        style={{
-
-                          display:
-
-                            "grid",
-
-                          gap: "9px",
-
-                          color:
-
-                            "#394b59",
-
-                          marginBottom:
-
-                            "16px"
-
-                        }}
-
-                      >
-
-
-
-                        <span
-
-                          style={{
-
-                            display:
-
-                              "flex",
-
-                            gap: "8px",
-
-                            alignItems:
-
-                              "center"
-
-                          }}
-
-                        >
-
-                          <MapPin
-
-                            size={17}
-
-                          />
-
-                          {espacio.ubicacion}
-
-                        </span>
-
-
-
-                        <span
-
-                          style={{
-
-                            display:
-
-                              "flex",
-
-                            gap: "8px",
-
-                            alignItems:
-
-                              "center"
-
-                          }}
-
-                        >
-
-                          <Users
-
-                            size={17}
-
-                          />
-
-                          Capacidad máxima:{" "}
-
-                          {espacio.capacidad}
-
-                        </span>
-
-
-
-                        <span
-
-                          style={{
-
-                            display:
-
-                              "flex",
-
-                            gap: "8px",
-
-                            alignItems:
-
-                              "center"
-
-                          }}
-
-                        >
-
-                          <CircleDollarSign
-
-                            size={17}
-
-                          />
-
-
-
-                          ₡
-
-                          {Number(
-
-                            espacio.costo ||
-
-                            0
-
-                          ).toLocaleString(
-
-                            "es-CR"
-
-                          )}
-
-                        </span>
-
-
-
-                      </div>
-
-
-
-                      <div
-                        style={{
-                          marginBottom: "16px",
-                          padding: "12px 14px",
-                          borderRadius: "10px",
-                          background: "#f4efe7",
-                          border: "1px solid #e4dacb"
-                        }}
-                      >
-
-                        <strong
-                          style={{
-                            display: "block",
-                            color: "#123b55",
-                            marginBottom: "8px",
-                            fontSize: "14px"
-                          }}
-                        >
-                          Próximas fechas ocupadas
-                        </strong>
-
-
-                        {ocupadasDelEspacio.length === 0 ? (
-
-                          <span
-                            style={{
-                              color: "#2f7a49",
-                              fontSize: "13px",
-                              fontWeight: 600
-                            }}
-                          >
-                            No hay reservaciones próximas.
-                          </span>
-
-                        ) : (
-
-                          <div
-                            style={{
-                              display: "grid",
-                              gap: "6px"
-                            }}
-                          >
-
-                            {ocupadasDelEspacio.map(
-                              (fecha, index) => (
-
-                                <div
-                                  key={`${espacio.id}-${index}`}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "7px",
-                                    color: "#5d6870",
-                                    fontSize: "13px"
-                                  }}
-                                >
-
-                                  <Clock3 size={15} />
-
-                                  <span>
-                                    {new Date(
-                                      fecha.fechaInicio
-                                    ).toLocaleString(
-                                      "es-CR",
-                                      {
-                                        dateStyle: "short",
-                                        timeStyle: "short"
-                                      }
-                                    )}
-
-                                    {" — "}
-
-                                    {new Date(
-                                      fecha.fechaFin
-                                    ).toLocaleString(
-                                      "es-CR",
-                                      {
-                                        dateStyle: "short",
-                                        timeStyle: "short"
-                                      }
-                                    )}
-                                  </span>
-
-                                </div>
-                              )
-                            )}
-
-                          </div>
-                        )}
-
-                      </div>
-
-
-
-
-                      {espacio.estado !==
-
-                        "DISPONIBLE" ? (
-
-
-
-                        <div
-
-                          style={{
-
-                            display:
-
-                              "flex",
-
-                            gap: "7px",
-
-                            alignItems:
-
-                              "center",
-
-                            fontWeight:
-
-                              700,
-
-                            color:
-
-                              "#a33b3b",
-
-                            marginBottom:
-
-                              "14px"
-
-                          }}
-
-                        >
-
-                          <XCircle
-
-                            size={18}
-
-                          />
-
-
-
-                          {espacio.estado ===
-
-                          "MANTENIMIENTO"
-
-                            ? "En mantenimiento"
-
-                            : "No disponible"}
-
-                        </div>
-
-
-
-                      ) : fueConsultado ? (
-
-
-
-                        disponible ? (
-
-
-
-                          <div
-
-                            style={{
-
-                              display:
-
-                                "flex",
-
-                              gap: "7px",
-
-                              alignItems:
-
-                                "center",
-
-                              fontWeight:
-
-                                700,
-
-                              color:
-
-                                "#2f7a49",
-
-                              marginBottom:
-
-                                "14px"
-
-                            }}
-
-                          >
-
-                            <CheckCircle2
-
-                              size={18}
-
-                            />
-
-                            Disponible para este horario
-
-                          </div>
-
-
-
-                        ) : (
-
-
-
-                          <div
-
-                            style={{
-
-                              display:
-
-                                "flex",
-
-                              gap: "7px",
-
-                              alignItems:
-
-                                "center",
-
-                              fontWeight:
-
-                                700,
-
-                              color:
-
-                                "#a33b3b",
-
-                              marginBottom:
-
-                                "14px"
-
-                            }}
-
-                          >
-
-                            <XCircle
-
-                              size={18}
-
-                            />
-
-                            Ocupado en este horario
-
-                          </div>
-
-                        )
-
-
-
-                      ) : (
-
-
-
-                        <div
-
-                          style={{
-
-                            color:
-
-                              "#826c48",
-
-                            fontWeight:
-
-                              600,
-
-                            marginBottom:
-
-                              "14px"
-
-                          }}
-
-                        >
-
-                          Selecciona una fecha para consultar.
-
-                        </div>
-
-                      )}
-
-
-
-
-
-                      <button
-
-                        type="button"
-
-                        className="reservas-primary-button"
-
-                        disabled={
-
-                          !disponible
-
-                        }
-
-                        onClick={() =>
-
-                          abrirNueva(
-
-                            espacio
-
-                          )
-
-                        }
-
-                        style={{
-
-                          width:
-
-                            "100%",
-
-                          justifyContent:
-
-                            "center",
-
-                          opacity:
-
-                            disponible
-
-                              ? 1
-
-                              : 0.5,
-
-                          cursor:
-
-                            disponible
-
-                              ? "pointer"
-
-                              : "not-allowed"
-
-                        }}
-
-                      >
-
-                        <Plus size={17} />
-
-                        Reservar
-
-                      </button>
-
-
-
-                    </div>
-
-
-
-                  </article>
-
-                );
-
-              }
-
-            )}
-
-
-
-          </div>
-
-
-
-        </section>
 
       )}
 
@@ -4047,6 +2711,21 @@ function Reservas() {
 
 
 
+              {error && <div className="mensaje-error" role="alert">{error}</div>}
+              <CalendarioDisponibilidad
+                key={formulario.espacioId}
+                espacio={espacioSeleccionado}
+                fechaInicio={formulario.fechaInicio}
+                onSeleccionar={(fecha) => setFormulario(anterior => ({
+                  ...anterior,
+                  fechaInicio: fecha + "T" + (anterior.fechaInicio.slice(11, 16) || "08:00"),
+                  fechaFin: fecha + "T" + (anterior.fechaFin.slice(11, 16) || "17:00")
+                }))}
+              />
+              {formularioBloqueado && <div className="reserva-bloqueada" role="status">
+                {fechaAnterior ? "Solo se permiten reservas desde la fecha actual en adelante." : "Espacio no disponible"}
+              </div>}
+              <fieldset className="reservation-fields" disabled={formularioBloqueado || guardando}>
               <div className="reservation-form-grid">
 
 
@@ -4277,102 +2956,17 @@ function Reservas() {
 
 
 
-                  {esUsuarioFinal &&
-
-                  perfiles.length === 1 ? (
-
-
-
-                    <input
-
-                      value={
-
-                        perfilSeleccionado?.nombre ||
-
-                        perfiles[0]?.nombre ||
-
-                        ""
-
-                      }
-
-                      disabled
-
-                    />
-
-
-
+                  {esUsuarioFinal ? (
+                    <div className="reserva-solicitante-propio">
+                      <strong>{perfilSeleccionado?.nombre || "Tu reserva personal"}</strong>
+                      <p>{perfilSeleccionado ? "La reserva quedará a tu nombre." : "Completa tu nombre y contacto. Se guardarán en tu perfil para próximas reservas."}</p>
+                    </div>
                   ) : (
-
-
-
-                    <select
-
-                      name="solicitantePerfilId"
-
-                      required
-
-                      value={
-
-                        formulario.solicitantePerfilId
-
-                      }
-
-                      onChange={
-
-                        handleChange
-
-                      }
-
-                    >
-
-
-
-                      <option value="">
-
-                        Seleccione un perfil
-
-                      </option>
-
-
-
-                      {perfiles.map(
-
-                        (perfil) => (
-
-
-
-                          <option
-
-                            key={
-
-                              perfil.idPerfil
-
-                            }
-
-                            value={
-
-                              perfil.idPerfil
-
-                            }
-
-                          >
-
-                            {perfil.nombre}
-
-                          </option>
-
-                        )
-
-                      )}
-
-
-
+                    <select name="solicitantePerfilId" required value={formulario.solicitantePerfilId} onChange={handleChange}>
+                      <option value="">Seleccione la persona, grupo o institución</option>
+                      {perfiles.map(perfil => <option key={perfil.idPerfil} value={perfil.idPerfil}>{perfil.nombre} - {perfil.tipoPerfil}</option>)}
                     </select>
-
                   )}
-
-
-
                 </div>
 
 
@@ -4385,8 +2979,7 @@ function Reservas() {
 
                   <label>
 
-                    Responsable *
-
+                    {perfilSeleccionado?.tipoPerfil === "Persona" || (esUsuarioFinal && !perfilSeleccionado) ? "Nombre completo *" : "Persona responsable de la actividad *"}
                   </label>
 
 
@@ -4423,14 +3016,14 @@ function Reservas() {
 
 
 
+                {(perfilSeleccionado && perfilSeleccionado.tipoPerfil !== "Persona") && (
                 <div className="reservation-field">
 
 
 
                   <label>
 
-                    Grupo
-
+                    {perfilSeleccionado.tipoPerfil === "Institucion" ? "Institución" : "Grupo Scout"}
                   </label>
 
 
@@ -4438,6 +3031,7 @@ function Reservas() {
                   <input
 
                     name="grupo"
+                    readOnly
 
                     maxLength="160"
 
@@ -4465,6 +3059,7 @@ function Reservas() {
 
 
 
+                )}
                 <div className="reservation-field">
 
 
@@ -4811,6 +3406,11 @@ function Reservas() {
 
 
 
+              </fieldset>
+              {editandoId === null && <PagoReserva
+                espacio={espacioSeleccionado} inicio={formulario.fechaInicio} fin={formulario.fechaFin}
+                disponible={!formularioBloqueado} procesando={guardando} onCambio={setPagoReserva}
+              />}
               <div className="reservation-form-actions">
 
 
@@ -4840,6 +3440,7 @@ function Reservas() {
                   type="submit"
 
                   className="reservation-save"
+                  disabled={formularioBloqueado || guardando || (editandoId === null && !pagoReserva?.valido)}
 
                 >
 

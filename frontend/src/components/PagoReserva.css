@@ -1,0 +1,11 @@
+.pago-reserva { margin: 24px 0 0; padding: 20px; border: 1px solid #d9d4ca; border-radius: 12px; background: #fff; color: #12384b; }
+.pago-reserva h3 { margin: 0 0 8px; }
+.pago-reserva p { font-size: 13px; line-height: 1.6; }
+.pago-reserva fieldset { border: 0; padding: 0; margin: 12px 0 0; min-width: 0; }
+.pago-reserva label { display: block; font-size: 13px; font-weight: 700; }
+.pago-reserva input, .pago-reserva select { display: block; width: 100%; box-sizing: border-box; border: 1px solid #d9d4ca; border-radius: 8px; padding: 11px; margin: 8px 0; background: #faf9f6; }
+.pago-reserva-reloj { padding: 10px 12px; border-radius: 8px; background: #edf5ef; font-weight: 700; color: #205d45; }
+.pago-reserva-total { font-weight: 700; }
+.pago-reserva button { border: 1px solid #17475e; border-radius: 8px; padding: 9px 12px; cursor: pointer; color: #17475e; background: white; }
+.pago-tarjeta-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+@media(max-width:480px) { .pago-tarjeta-grid { grid-template-columns: 1fr; } }
