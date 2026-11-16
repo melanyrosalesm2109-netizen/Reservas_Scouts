@@ -52,7 +52,7 @@ class ReservaPagoSqlServerTest {
         r=solicitud(152);
         reserva=checkout.confirmar(new ReservaPagoService.DatosPago(r,apartar(r),"Efectivo",null),null,usuario(),"Usuario");
         var pago=pagos.filtrar(reserva.id(),null,null,null,null,null).get(0);
-        assertEquals("APROBADA",reserva.estado());
+        assertEquals("PENDIENTE",reserva.estado());
         assertEquals("PENDIENTE",pago.estado());
         assertEquals(r.fechaInicio().toLocalDate(),pago.fechaPago());
     }

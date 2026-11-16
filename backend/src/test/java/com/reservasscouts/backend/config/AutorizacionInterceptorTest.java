@@ -114,6 +114,14 @@ class AutorizacionInterceptorTest {
         request.setRequestURI(uri);
         return request;
     }
+    @Test
+    void soloAdministradorPuedeRestaurarRespaldos() throws Exception {
+        assertThat(permite("POST", "/api/respaldo/restaurar", "Administrador")).isTrue();
+        for(String rol : new String[]{"Recepcionista","Usuario","Miembro"}) {
+            assertThat(permite("POST", "/api/respaldo/restaurar", rol)).isFalse();
+            assertThat(permite("POST", "/api/respaldo", rol)).isFalse();
+        }
+    }
 
     private void agregarSesion(MockHttpServletRequest request, String rol) {
         MockHttpSession session = new MockHttpSession();

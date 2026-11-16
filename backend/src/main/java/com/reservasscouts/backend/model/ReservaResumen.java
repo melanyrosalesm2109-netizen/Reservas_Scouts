@@ -12,6 +12,9 @@ public record ReservaResumen(
         String tipoActividad,
         LocalDateTime fechaInicio,
         LocalDateTime fechaFin,
-        String estado
+        String estado,
+        Integer espacioId,
+        String metodoPagoPendiente,
+        LocalDateTime pagoVenceEn
 ) {
 }

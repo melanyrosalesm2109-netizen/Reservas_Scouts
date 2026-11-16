@@ -275,6 +275,7 @@ public class AutorizacionInterceptor
                         consultaReservasPropias
                                 || (HttpMethod.GET.matches(method) && path.equals("/api/perfiles/mi-perfil"))
                                 || consultaDisponibilidad
+                                || (HttpMethod.GET.matches(method) && path.equals("/api/reservas/politica-pago"))
                                 || consultaFechasOcupadas
                                 || consultaEspacios
                                 || consultaPerfilPropio

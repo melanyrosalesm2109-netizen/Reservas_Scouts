@@ -35,6 +35,8 @@ public class PagoRepository {
     // paPagoFiltrar
     // =====================================================
 
+    public void bloquearEdicion(Integer id) { jdbcTemplate.update("EXEC dbo.paPagoBloquearEdicion ?", id); }
+
     public List<Pago> filtrar(
             Integer reservaId,
             String codigoReserva,

@@ -1,5 +1,5 @@
 -- Datos ficticios para explorar el sistema. Solo agrega registros ausentes.
--- Ejecutar en la base local con: sqlcmd -S localhost -E -C -b -f 65001 -i db/demo_comportamiento.sql
+-- Ejecutar en la base local con: sqlcmd -S localhost -E -C -b -f 65001 -i db/demo/demo_comportamiento.sql
 USE reservasScouts;
 GO
 SET NOCOUNT ON;

@@ -1,1163 +1,127 @@
 import { useCallback, useEffect, useState } from "react";
-
-import {
-  WalletCards,
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  X,
-  CalendarDays,
-  ReceiptText,
-  RotateCcw,
-  CircleDollarSign
-} from "lucide-react";
-
-import {
-  listarPagos,
-  buscarPagoPorId,
-  crearPago,
-  actualizarPago,
-  eliminarPago
-} from "../services/pagoService";
-
-import {
-  listarReservas
-} from "../services/reservaService";
-import { useAuth } from "../context/useAuth";
-
-import "./Pagos.css";
-import RechazoPagoDialog from "../components/RechazoPagoDialog";
-import ComprobanteViewer from "../components/ComprobanteViewer";
+import { Link, useSearchParams } from "react-router-dom";
+import { Plus, Search, RotateCcw } from "lucide-react";
+import { listarPagos } from "../services/pagoService";
+import { listarReservas } from "../services/reservaService";
 import { verificarPago } from "../services/reservaPagoService";
+import { esTransferencia, fechaCorta, moneda } from "../services/pagoGestionService";
+import { useAuth } from "../context/useAuth";
+import ComprobanteViewer from "../components/ComprobanteViewer";
+import RegistroCobro from "../components/RegistroCobro";
+import DetallePago from "../components/DetallePago";
+import ResumenPagos from "../components/ResumenPagos";
+import "./Pagos.css";
+import "./PagosGestion.css";
 
-const pagoVacio = {
-  reservaId: "",
-  monto: "",
-  metodo: "SINPE Móvil",
-  fechaPago: "",
-  estado: "PENDIENTE",
-  comprobante: "",
-  notas: ""
-};
+const filtrosVacios = { codigoReserva: "", metodo: "", estado: "", fechaDesde: "", fechaHasta: "" };
 
-const filtrosVacios = {
-  codigoReserva: "",
-  metodo: "",
-  estado: "",
-  fechaDesde: "",
-  fechaHasta: ""
-};
-
-function Pagos() {
-
+export default function Pagos() {
+  const [searchParams] = useSearchParams();
+  const reservaFiltro = searchParams.get("reservaId");
   const { usuario } = useAuth();
-  const puedeGestionarPagos =
-    usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
-
-  const [pagoRechazo, setPagoRechazo] = useState(null);
+  const administrador = usuario?.rol === "Administrador";
+  const [pagos, setPagos] = useState([]);
+  const [reservas, setReservas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [filtros, setFiltros] = useState(filtrosVacios);
+  const [aplicados, setAplicados] = useState(filtrosVacios);
+  const [tab, setTab] = useState("todos");
+  const [comprobante, setComprobante] = useState(null);
+  const [detalle, setDetalle] = useState(null);
+  const [nuevo, setNuevo] = useState(false);
   const [revisando, setRevisando] = useState(null);
-  const [pagoComprobante, setPagoComprobante] = useState(null);
-  const [pagos, setPagos] =
-    useState([]);
-
-  const [todosPagos, setTodosPagos] =
-    useState([]);
-
-  const [reservas, setReservas] =
-    useState([]);
-
-  const [filtros, setFiltros] =
-    useState(filtrosVacios);
-
-  const [formulario, setFormulario] =
-    useState(pagoVacio);
-
-  const [modalAbierto, setModalAbierto] =
-    useState(false);
-
-  const [editandoId, setEditandoId] =
-    useState(null);
-
-  const [cargando, setCargando] =
-    useState(true);
-
-  const [mensaje, setMensaje] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const cargarInicial = useCallback(async () => {
-
+  const cargar = useCallback(async () => {
     try {
-
-      setCargando(true);
-      setError("");
-
-      const [
-        pagosData,
-        reservasData
-      ] = await Promise.all([
-        listarPagos(),
-        listarReservas()
-      ]);
-
-      setPagos(pagosData);
-      setTodosPagos(pagosData);
-      setReservas(reservasData);
-
-    } catch (err) {
-
-      setError(err.message);
-
-    } finally {
-
-      setCargando(false);
-    }
+      const [lista, actividades] = await Promise.all([listarPagos(), listarReservas()]);
+      setPagos(lista); setReservas(actividades); setError("");
+    } catch (err) { setError(err.message); }
+    finally { setCargando(false); }
   }, []);
-
   useEffect(() => {
-    queueMicrotask(() => {
-      void cargarInicial();
-    });
-  }, [cargarInicial]);
+    queueMicrotask(() => { void cargar(); });
+    const actualizar = () => { if (document.visibilityState !== "hidden") void cargar(); };
+    const timer = setInterval(actualizar, 5000);
+    window.addEventListener("focus", actualizar);
+    window.addEventListener("reservas-pagos-actualizados", actualizar);
+    return () => { clearInterval(timer); window.removeEventListener("focus", actualizar); window.removeEventListener("reservas-pagos-actualizados", actualizar); };
+  }, [cargar]);
 
-  const handleFiltroChange = (
-    event
-  ) => {
+  const porReserva = new Map(reservas.map(r => [r.id, r]));
+  const activa = pago => !porReserva.has(pago.reservaId) || ["PENDIENTE", "APROBADA"].includes(porReserva.get(pago.reservaId).estado);
+  const porRevisar = pago => pago.estado === "PENDIENTE" && esTransferencia(pago) && activa(pago);
+  const porCobrar = pago => pago.estado === "PENDIENTE" && pago.metodo === "Efectivo" && activa(pago);
+  const revisar = pagos.filter(porRevisar).length;
+  const efectivo = pagos.filter(porCobrar).length;
+  const visibles = pagos.filter(p => (!reservaFiltro || String(p.reservaId) === reservaFiltro) && (tab !== "revisar" || porRevisar(p)) && (tab !== "efectivo" || porCobrar(p))
+    && (!aplicados.codigoReserva || p.reservaCodigo.toLowerCase().includes(aplicados.codigoReserva.trim().toLowerCase()))
+    && (!aplicados.metodo || p.metodo === aplicados.metodo) && (!aplicados.estado || p.estado === aplicados.estado)
+    && (!aplicados.fechaDesde || p.fechaPago >= aplicados.fechaDesde) && (!aplicados.fechaHasta || p.fechaPago <= aplicados.fechaHasta));
 
-    const {
-      name,
-      value
-    } = event.target;
-
-    setFiltros({
-      ...filtros,
-      [name]: value
-    });
-  };
-
-  const aplicarFiltros = async (
-    event
-  ) => {
-
-    event.preventDefault();
-
+  async function resolver(pago, aprobar, motivo = null) {
+    if (revisando !== null) return;
+    if (aprobar && !window.confirm(pago.metodo === "Efectivo" ? "¿Confirmas que recibiste este dinero en efectivo?" : "¿Revisaste el comprobante y confirmas que el pago es correcto?")) return;
+    setRevisando(pago.id); setError(""); setMensaje("");
     try {
-
-      setCargando(true);
-      setError("");
-
-      const datos =
-        await listarPagos(
-          filtros
-        );
-
-      setPagos(datos);
-
-    } catch (err) {
-
-      setError(err.message);
-
-    } finally {
-
-      setCargando(false);
-    }
-  };
-
-  const limpiarFiltros = async () => {
-
-    setFiltros(
-      filtrosVacios
-    );
-
-    await cargarInicial();
-  };
-
-  const revisar = async pago => {
-    if (!window.confirm(pago.metodo === "Efectivo" ? "¿Confirmas que recibiste el pago en efectivo?" : "¿Confirmas que el pago es correcto?")) return;
-    setRevisando(pago.id); setError("");
-    try { await verificarPago(pago.id, true, null); await cargarInicial(); setMensaje("Pago registrado correctamente y reserva confirmada."); }
-    catch (err) { setError(err.message); }
+      await verificarPago(pago.id, aprobar, motivo);
+      setComprobante(null); setDetalle(null); await cargar();
+      setMensaje(aprobar ? "Cobro confirmado y reserva aprobada." : "Pago rechazado y reserva cancelada. Se conserva el motivo en el historial.");
+    } catch (err) { setError(err.message); throw err; }
     finally { setRevisando(null); }
-  };
-  const abrirComprobante = pago => setPagoComprobante(pago);
-  const abrirNuevo = () => {
-
-    setEditandoId(null);
-
-    setFormulario({
-      ...pagoVacio,
-
-      fechaPago:
-        new Date()
-          .toISOString()
-          .slice(0, 10)
-    });
-
-    setError("");
-    setMensaje("");
-
-    setModalAbierto(true);
-  };
-
-  const abrirEditar = async (
-    pago
-  ) => {
-
-    try {
-
-      setError("");
-      setMensaje("");
-
-      const detalle =
-        await buscarPagoPorId(
-          pago.id
-        );
-
-      setEditandoId(
-        detalle.id
-      );
-
-      setFormulario({
-
-        reservaId:
-          detalle.reservaId || "",
-
-        monto:
-          detalle.monto || "",
-
-        metodo:
-          detalle.metodo ||
-          "SINPE Móvil",
-
-        fechaPago:
-          detalle.fechaPago || "",
-
-        estado:
-          detalle.estado ||
-          "PENDIENTE",
-
-        comprobante:
-          detalle.comprobante || "",
-
-        notas:
-          detalle.notas || ""
-      });
-
-      setModalAbierto(true);
-
-    } catch (err) {
-
-      setError(err.message);
-    }
-  };
-
-  const cerrarModal = () => {
-
-    setModalAbierto(false);
-
-    setEditandoId(null);
-
-    setFormulario(
-      pagoVacio
-    );
-  };
-
-  const handleChange = (
-    event
-  ) => {
-
-    const {
-      name,
-      value
-    } = event.target;
-
-    setFormulario({
-      ...formulario,
-      [name]: value
-    });
-  };
-
-  const guardarPago = async (
-    event
-  ) => {
-
-    event.preventDefault();
-
-    setError("");
-    setMensaje("");
-
-    if (!formulario.reservaId) {
-
-      setError(
-        "Debe seleccionar una reserva."
-      );
-
-      return;
-    }
-
-    if (
-      !formulario.monto ||
-      Number(formulario.monto) <= 0
-    ) {
-
-      setError(
-        "El monto debe ser mayor que cero."
-      );
-
-      return;
-    }
-
-    if (!formulario.fechaPago) {
-
-      setError(
-        "Debe indicar la fecha del pago."
-      );
-
-      return;
-    }
-
-    const datos = {
-
-      reservaId:
-        Number(
-          formulario.reservaId
-        ),
-
-      monto:
-        Number(
-          formulario.monto
-        ),
-
-      metodo:
-        formulario.metodo,
-
-      fechaPago:
-        formulario.fechaPago,
-
-      estado:
-        formulario.estado,
-
-      comprobante:
-        formulario.comprobante
-          .trim() || null,
-
-      notas:
-        formulario.notas
-          .trim() || null
-    };
-
-    try {
-
-      if (editandoId !== null) {
-
-        await actualizarPago(
-          editandoId,
-          datos
-        );
-
-        cerrarModal();
-
-        setMensaje(
-          "Pago actualizado correctamente."
-        );
-
-      } else {
-
-        await crearPago(
-          datos
-        );
-
-        cerrarModal();
-
-        setMensaje(
-          "Pago registrado correctamente."
-        );
-      }
-
-      setFiltros(
-        filtrosVacios
-      );
-
-      await cargarInicial();
-
-    } catch (err) {
-
-      cerrarModal();
-
-      setMensaje("");
-
-      setError(
-        err.message ||
-        "No se pudo registrar el pago."
-      );
-    }
-  };
-
-  const borrarPago = async (
-    pago
-  ) => {
-
-    const confirmar =
-      window.confirm(
-        `¿Deseas eliminar el pago de la reserva "${pago.reservaCodigo}"?`
-      );
-
-    if (!confirmar) {
-      return;
-    }
-
-    try {
-
-      setError("");
-      setMensaje("");
-
-      await eliminarPago(
-        pago.id
-      );
-
-      setMensaje(
-        "Pago eliminado correctamente."
-      );
-
-      await cargarInicial();
-
-    } catch (err) {
-
-      setError(err.message);
-    }
-  };
-
-  const totalPagado =
-    todosPagos
-      .filter(
-        (pago) =>
-          pago.estado ===
-          "PAGADO"
-      )
-      .reduce(
-        (total, pago) =>
-          total +
-          Number(pago.monto),
-        0
-      );
-
-  const pendientes =
-    todosPagos.filter(
-      (pago) =>
-        pago.estado ===
-        "PENDIENTE"
-    ).length;
-
-  const pagados =
-    todosPagos.filter(
-      (pago) =>
-        pago.estado ===
-        "PAGADO"
-    ).length;
-
-  return (
-
-    <div className="pagos-page">
-      {pagoRechazo && <RechazoPagoDialog pago={pagoRechazo} onCerrar={() => setPagoRechazo(null)} onConfirmar={async motivo => {
-        await verificarPago(pagoRechazo.id, false, motivo);
-        setPagoRechazo(null);
-        setMensaje("Pago rechazado y reserva cancelada. El horario está disponible nuevamente.");
-        await cargarInicial();
-      }} />}
-
-      {pagoComprobante && <ComprobanteViewer pago={pagoComprobante} onCerrar={() => setPagoComprobante(null)} />}
-
-      {/* CABECERA */}
-
-      <div className="pagos-header">
-
-        <div>
-
-          <span className="pagos-label">
-            GESTIÓN DE PAGOS
-          </span>
-
-          <h1>
-            Pagos
-          </h1>
-
-          <p>
-            Administra los pagos asociados
-            a las reservas.
-          </p>
-
-        </div>
-
-        {puedeGestionarPagos && (
-          <button
-            className="pagos-add-button"
-            onClick={abrirNuevo}
-          >
-            <Plus size={18} />
-            Nuevo pago
-          </button>
-        )}
-
-      </div>
-
-      {mensaje && (
-        <div className="mensaje-exito">
-          {mensaje}
-        </div>
-      )}
-
-      {error && (
-        <div className="mensaje-error">
-          {error}
-        </div>
-      )}
-
-      {/* ESTADÍSTICAS */}
-
-      <div className="pagos-stats">
-
-        <div className="pago-stat">
-
-          <WalletCards size={22} />
-
-          <div>
-            <span>
-              Total de pagos
-            </span>
-
-            <strong>
-              {todosPagos.length}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="pago-stat">
-
-          <ReceiptText size={22} />
-
-          <div>
-            <span>
-              Pagados
-            </span>
-
-            <strong>
-              {pagados}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="pago-stat">
-
-          <CalendarDays size={22} />
-
-          <div>
-            <span>
-              Pendientes
-            </span>
-
-            <strong>
-              {pendientes}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="pago-stat">
-
-          <CircleDollarSign size={22} />
-
-          <div>
-            <span>
-              Total recibido
-            </span>
-
-            <strong>
-              ₡
-              {totalPagado.toLocaleString(
-                "es-CR"
-              )}
-            </strong>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* PANEL */}
-
-      <section className="pagos-panel">
-
-        <form
-          className="pagos-filtros"
-          onSubmit={aplicarFiltros}
-        >
-
-          <div className="pagos-search">
-
-            <Search size={17} />
-
-            <input
-              name="codigoReserva"
-              placeholder="Código reserva..."
-              value={
-                filtros.codigoReserva
-              }
-              onChange={
-                handleFiltroChange
-              }
-            />
-
-          </div>
-
-          <select
-            name="metodo"
-            value={
-              filtros.metodo
-            }
-            onChange={
-              handleFiltroChange
-            }
-          >
-
-            <option value="">
-              Todos los métodos
-            </option>
-
-            <option value="SINPE Móvil">
-              SINPE Móvil
-            </option>
-
-            <option value="Transferencia bancaria">
-              Transferencia bancaria
-            </option>
-
-            <option value="Efectivo">
-              Efectivo
-            </option>
-
-            <option value="Tarjeta">
-              Tarjeta
-            </option>
-
-          </select>
-
-          <select
-            name="estado"
-            value={
-              filtros.estado
-            }
-            onChange={
-              handleFiltroChange
-            }
-          >
-
-            <option value="">
-              Todos los estados
-            </option>
-
-            <option value="PAGADO">
-              Pagado
-            </option>
-
-            <option value="PENDIENTE">
-              Pendiente
-            </option>
-
-            <option value="RECHAZADO">
-              Rechazado
-            </option>
-
-          </select>
-
-          <input
-            type="date"
-            name="fechaDesde"
-            value={
-              filtros.fechaDesde
-            }
-            onChange={
-              handleFiltroChange
-            }
-          />
-
-          <input
-            type="date"
-            name="fechaHasta"
-            value={
-              filtros.fechaHasta
-            }
-            onChange={
-              handleFiltroChange
-            }
-          />
-
-          <button
-            type="submit"
-            className="pagos-filter-button"
-          >
-            Buscar
-          </button>
-
-          <button
-            type="button"
-            className="pagos-clear-button"
-            onClick={
-              limpiarFiltros
-            }
-          >
-            <RotateCcw size={16} />
-            Limpiar
-          </button>
-
-        </form>
-
-        <div className="pagos-resultados">
-          Mostrando {pagos.length} pago(s)
-        </div>
-
-        <div className="pagos-table-wrapper">
-
-          <table className="pagos-table">
-
-            <thead>
-
-              <tr>
-                <th>Reserva</th>
-                <th>Espacio</th>
-                <th>Monto</th>
-                <th>Método</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>{puedeGestionarPagos ? "Acciones" : ""}</th>
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {cargando ? (
-
-                <tr>
-
-                  <td
-                    colSpan="7"
-                    className="pagos-empty"
-                  >
-                    Cargando pagos...
-                  </td>
-
-                </tr>
-
-              ) : pagos.length === 0 ? (
-
-                <tr>
-
-                  <td
-                    colSpan="7"
-                    className="pagos-empty"
-                  >
-
-                    <WalletCards size={36} />
-
-                    <strong>
-                      No hay pagos registrados
-                    </strong>
-
-                    <span>
-                      Registra el primer pago
-                      usando el botón superior.
-                    </span>
-
-                  </td>
-
-                </tr>
-
-              ) : (
-
-                pagos.map(
-                  (pago) => (
-
-                    <tr key={pago.id}>
-
-                      <td>
-                        <strong className="pago-codigo">
-                          {pago.reservaCodigo}
-                        </strong>
-                      </td>
-
-                      <td>
-                        {pago.espacio}
-                      </td>
-
-                      <td>
-                        <strong>
-                          ₡
-                          {Number(
-                            pago.monto
-                          ).toLocaleString(
-                            "es-CR"
-                          )}
-                        </strong>
-                      </td>
-
-                      <td>
-                        {pago.metodo}
-                      </td>
-
-                      <td>
-                        {pago.fechaPago
-                          ? new Date(
-                              `${pago.fechaPago}T00:00:00`
-                            ).toLocaleDateString(
-                              "es-CR"
-                            )
-                          : ""}
-                      </td>
-
-                      <td>
-
-                        <span
-                          className={`pago-status ${pago.estado.toLowerCase()}`}
-                        >
-                          {pago.estado}
-                        </span>
-
-                      </td>
-
-                      <td>
-
-                        {puedeGestionarPagos ? (
-                        <div className="pago-actions">
-                          {pago.comprobante === "Comprobante adjunto" && <button type="button" className="pago-review" onClick={() => abrirComprobante(pago)}>Ver comprobante</button>}
-                          {pago.estado === "PENDIENTE" && ["SINPE Móvil", "Transferencia bancaria", "Efectivo"].includes(pago.metodo) && <>
-                            <button type="button" className="pago-review" disabled={revisando === pago.id} onClick={() => revisar(pago)}>Verificar pago</button>
-                            <button type="button" className="pago-review pago-reject" disabled={revisando === pago.id} onClick={() => setPagoRechazo(pago)}>Rechazar</button>
-                          </>}
-
-                          <button
-                            type="button"
-                            className="pago-edit"
-                            onClick={() =>
-                              abrirEditar(
-                                pago
-                              )
-                            }
-                          >
-                            <Pencil size={16} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="pago-delete"
-                            onClick={() =>
-                              borrarPago(
-                                pago
-                              )
-                            }
-                          >
-                            <Trash2 size={16} />
-                          </button>
-
-                        </div>
-                        ) : (
-                          <span>Solo lectura</span>
-                        )}
-
-                      </td>
-
-                    </tr>
-
-                  )
-                )
-
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-      {/* MODAL */}
-
-      {modalAbierto && (
-
-        <div className="pago-modal-overlay">
-
-          <div className="pago-modal">
-
-            <div className="pago-modal-header">
-
-              <div>
-
-                <span>
-                  RESERVAS SCOUTS
-                </span>
-
-                <h2>
-                  {editandoId !== null
-                    ? "Editar pago"
-                    : "Nuevo pago"}
-                </h2>
-
-                <p>
-                  Registra la información
-                  correspondiente al pago.
-                </p>
-
-              </div>
-
-              <button
-                type="button"
-                onClick={cerrarModal}
-              >
-                <X size={21} />
-              </button>
-
-            </div>
-
-            <form
-              className="pago-form"
-              onSubmit={guardarPago}
-            >
-              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
-
-              <div className="pago-form-grid">
-
-                <div className="pago-field pago-full">
-
-                  <label>
-                    Reserva <span className="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <select
-                    name="reservaId"
-                    required
-                    value={
-                      formulario.reservaId
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  >
-
-                    <option value="">
-                      Seleccione una reserva
-                    </option>
-
-                    {reservas.map(
-                      (reserva) => (
-
-                        <option
-                          key={reserva.id}
-                          value={reserva.id}
-                        >
-                          {reserva.codigo}
-                          {" - "}
-                          {reserva.espacio}
-                          {" - "}
-                          {reserva.solicitante}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                </div>
-
-                <div className="pago-field">
-
-                  <label>
-                    Monto <span className="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    type="number"
-                    name="monto"
-                    min="0.01"
-                    step="0.01"
-                    required
-                    value={
-                      formulario.monto
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Ej: 25000"
-                  />
-
-                </div>
-
-                <div className="pago-field">
-
-                  <label>
-                    Fecha de pago <span className="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    type="date"
-                    name="fechaPago"
-                    required
-                    value={
-                      formulario.fechaPago
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  />
-
-                </div>
-
-                <div className="pago-field">
-
-                  <label>
-                    Método <span className="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <select
-                    name="metodo"
-                    value={
-                      formulario.metodo
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  >
-
-                    <option value="SINPE Móvil">
-                      SINPE Móvil
-                    </option>
-
-                    <option value="Transferencia bancaria">
-                      Transferencia bancaria
-                    </option>
-
-                    <option value="Efectivo">
-                      Efectivo
-                    </option>
-
-                    <option value="Tarjeta">
-                      Tarjeta
-                    </option>
-
-                  </select>
-
-                </div>
-
-                <div className="pago-field">
-
-                  <label>
-                    Estado <span className="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <select
-                    name="estado"
-                    value={
-                      formulario.estado
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  >
-
-                    <option value="PENDIENTE">
-                      Pendiente
-                    </option>
-
-                    <option value="PAGADO">
-                      Pagado
-                    </option>
-
-                    <option value="RECHAZADO">
-                      Rechazado
-                    </option>
-
-                  </select>
-
-                </div>
-
-                <div className="pago-field pago-full">
-
-                  <label>
-                    Comprobante
-                  </label>
-
-                  <input
-                    type="text"
-                    name="comprobante"
-                    maxLength="255"
-                    value={
-                      formulario.comprobante
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Número o referencia del comprobante"
-                  />
-
-                </div>
-
-                <div className="pago-field pago-full">
-
-                  <label>
-                    Notas
-                  </label>
-
-                  <textarea
-                    name="notas"
-                    rows="4"
-                    value={
-                      formulario.notas
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Observaciones del pago..."
-                  />
-
-                </div>
-
-              </div>
-
-              <div className="pago-form-actions">
-
-                <button
-                  type="button"
-                  className="pago-cancel"
-                  onClick={cerrarModal}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="pago-save"
-                >
-                  {editandoId !== null
-                    ? "Guardar cambios"
-                    : "Registrar pago"}
-                </button>
-
-              </div>
-
-            </form>
-
-          </div>
-
-        </div>
-
-      )}
-
+  }
+  function cobrar(pago) { void resolver(pago, true).catch(() => {}); }
+  const comprobanteActual = comprobante && (pagos.find(p => p.id === comprobante.id) || comprobante);
+  const puedeRevisar = comprobanteActual && porRevisar(comprobanteActual);
+  const cambiarFiltro = event => setFiltros(f => ({ ...f, [event.target.name]: event.target.value }));
+
+  return <div className="pagos-page">
+    {comprobante && <ComprobanteViewer pago={comprobanteActual} onCerrar={() => setComprobante(null)}
+      onAprobar={puedeRevisar ? () => resolver(comprobanteActual, true) : undefined}
+      onRechazar={puedeRevisar ? motivo => resolver(comprobanteActual, false, motivo) : undefined} procesando={revisando !== null} />}
+    {detalle && <DetallePago pago={detalle} administrador={administrador} onCerrar={() => setDetalle(null)} onComprobante={setComprobante} onCobrar={cobrar} onActualizado={() => void cargar()}
+      onAnulado={() => { setDetalle(null); setMensaje("Registro anulado con motivo. Se conserva el historial y el saldo se actualizó."); void cargar(); }} />}
+    {nuevo && <RegistroCobro onCerrar={() => setNuevo(false)} onRegistrado={pago => {
+      setNuevo(false); setMensaje(pago.estado === "PAGADO" ? "Pago simulado aprobado y saldo actualizado." : pago.metodo === "Efectivo" ? "Efectivo agendado. Registra el cobro cuando recibas el dinero." : "Comprobante registrado y pendiente de revisión."); void cargar();
+    }} />}
+    <div className="pagos-header"><div><span className="pagos-label">REGISTRO DE COBROS</span><h1>Pagos</h1><p>Consulta saldos e historial. Los pendientes también se atienden desde <Link to="/notificaciones">Notificaciones</Link>.</p></div>
+      <button className="pagos-add-button" type="button" onClick={() => setNuevo(true)}><Plus size={18} />Registrar cobro</button></div>
+    {mensaje && <div className="mensaje-exito" role="status">{mensaje}</div>}{error && <div className="mensaje-error" role="alert">{error}</div>}
+    {reservaFiltro && <p className="pago-aviso">Pagos y comprobantes de la reserva seleccionada. <Link to="/pagos">Ver todas las reservas</Link></p>}
+    <ResumenPagos pagos={pagos} revisar={revisar} efectivo={efectivo} cargando={cargando}
+      onPendientes={vista => { setTab(vista); setFiltros(filtrosVacios); setAplicados(filtrosVacios); }}
+      onEstado={estado => { setTab("todos"); const f = { ...filtrosVacios, estado }; setFiltros(f); setAplicados(f); }}
+      onMetodo={metodo => { setTab("todos"); const f = { ...filtrosVacios, metodo, estado: "PAGADO" }; setFiltros(f); setAplicados(f); }} />
+    <div className="pagos-tabs" role="tablist" aria-label="Registro de pagos">
+      {[['todos', 'Todos', pagos.length], ['revisar', 'Comprobantes por revisar', revisar], ['efectivo', 'Efectivo por cobrar', efectivo]].map(([id, label, count]) =>
+        <button type="button" role="tab" aria-selected={tab === id} key={id} onClick={() => setTab(id)}>{label} <span>{count}</span></button>)}
     </div>
-  );
+    <section className="pagos-panel">
+      <form className="pagos-filtros" onSubmit={e => { e.preventDefault(); setAplicados({ ...filtros }); }}>
+        <div className="pagos-search"><Search size={17} /><input name="codigoReserva" aria-label="Código de reserva" placeholder="Código de reserva…" value={filtros.codigoReserva} onChange={cambiarFiltro} /></div>
+        <select name="metodo" aria-label="Método de pago" value={filtros.metodo} onChange={cambiarFiltro}><option value="">Todos los métodos</option>{['SINPE Móvil', 'Transferencia bancaria', 'Efectivo', 'Tarjeta'].map(m => <option key={m}>{m}</option>)}</select>
+        <select name="estado" aria-label="Estado de pago" value={filtros.estado} onChange={cambiarFiltro}><option value="">Todos los estados</option>{['PENDIENTE', 'PAGADO', 'RECHAZADO', 'ANULADO', 'VENCIDO'].map(e => <option key={e}>{e}</option>)}</select>
+        <label className="pago-filtro-fecha">Desde<input type="date" name="fechaDesde" value={filtros.fechaDesde} onChange={cambiarFiltro} /></label>
+        <label className="pago-filtro-fecha">Hasta<input type="date" name="fechaHasta" value={filtros.fechaHasta} onChange={cambiarFiltro} /></label>
+        <button type="submit" className="pagos-filter-button">Buscar</button><button type="button" className="pagos-clear-button" onClick={() => { setFiltros(filtrosVacios); setAplicados(filtrosVacios); }}><RotateCcw size={15} />Limpiar</button>
+      </form>
+      <div className="pagos-resultados">Mostrando {visibles.length} pago(s). Las fechas corresponden al registro del pago o al cobro previsto si es efectivo pendiente.</div>
+      <p className="pago-scroll-ayuda">Desliza la tabla horizontalmente para ver todas las columnas.</p>
+      <div className="pagos-table-wrapper"><table className="pagos-table"><thead><tr><th>Reserva / espacio</th><th>Monto</th><th>Método</th><th>Fecha y concepto</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>{cargando ? <tr><td colSpan={6} className="pagos-empty">Cargando pagos…</td></tr> : visibles.length === 0 ? <tr><td colSpan={6} className="pagos-empty">No hay pagos en esta vista.</td></tr> : visibles.map(pago => {
+          const etiqueta = porCobrar(pago) ? "Efectivo pendiente" : porRevisar(pago) ? "Por revisar" : pago.estado;
+          return <tr key={pago.id}>
+            <td><strong className="pago-codigo">{pago.reservaCodigo}</strong><span className="pago-espacio-texto">{pago.espacio}</span></td><td><strong>{moneda(pago.monto)}</strong></td>
+            <td>{pago.metodo}{pago.metodo === "Tarjeta" && <small className="pago-espacio-texto">Simulado</small>}</td>
+            <td><span className="pago-fecha-concepto">{porCobrar(pago) ? "Cobro previsto" : pago.estado === "PAGADO" ? "Pagado el" : "Registrado el"}</span>{fechaCorta(pago.fechaPago)}</td>
+            <td><span className={`pago-status ${pago.estado.toLowerCase()}`}>{etiqueta}</span></td>
+            <td><div className="pago-actions-gestion"><button type="button" onClick={() => setDetalle(pago)}>Ver detalle</button>
+              {porRevisar(pago) && <button type="button" className="pago-principal" onClick={() => setComprobante(pago)} disabled={pago.comprobante !== "Comprobante adjunto"}>Revisar comprobante</button>}
+              {porCobrar(pago) && <button type="button" className="pago-principal" disabled={revisando !== null} onClick={() => cobrar(pago)}>Registrar cobro</button>}
+              {!porRevisar(pago) && pago.comprobante === "Comprobante adjunto" && <button type="button" onClick={() => setComprobante(pago)}>Ver comprobante</button>}
+            </div></td>
+          </tr>;
+        })}</tbody></table></div>
+    </section>
+  </div>;
 }
-
-export default Pagos;

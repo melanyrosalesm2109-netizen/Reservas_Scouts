@@ -1,3 +1,4 @@
+import { fechaPlazoPago } from "../services/pagoGestionService";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 
@@ -13,6 +14,7 @@ import {
   Pencil,
 
   Trash2,
+  ReceiptText,
 
   X,
 
@@ -1431,7 +1433,7 @@ function Reservas() {
         setMensaje(
 
           pagoReserva.metodo === "Efectivo"
-            ? "Reserva realizada correctamente. El pago en efectivo queda pendiente para el día de llegada."
+            ? "Cupo guardado. La reserva está pendiente de pago en efectivo y se aprobará cuando recepción confirme el cobro."
             : "Reserva realizada correctamente. Puedes consultar su estado en Mis reservas."
 
         );
@@ -1500,7 +1502,7 @@ function Reservas() {
 
       window.confirm(
 
-        `¿Deseas eliminar la reserva "${reserva.codigo}"?`
+        `¿Deseas eliminar la reserva "${reserva.codigo}"? Se liberará el horario y se conservarán la auditoría, los pagos y los comprobantes. Esta acción no realiza reembolsos.`
 
       );
 
@@ -1534,7 +1536,7 @@ function Reservas() {
 
       setMensaje(
 
-        "Reserva eliminada correctamente."
+        "Reserva eliminada. La auditoría, los pagos y los comprobantes se conservaron."
 
       );
 
@@ -1747,6 +1749,7 @@ function Reservas() {
 
 
 
+            <option value="VENCIDA">Vencida</option>
             <option value="FINALIZADA">
 
               Finalizada
@@ -2160,9 +2163,6 @@ function Reservas() {
 
 
                       </span>
-
-
-
                     </td>
 
 
@@ -2192,9 +2192,6 @@ function Reservas() {
 
 
                       </span>
-
-
-
                     </td>
 
 
@@ -2228,9 +2225,6 @@ function Reservas() {
 
 
                       </span>
-
-
-
                     </td>
 
 
@@ -2267,18 +2261,17 @@ function Reservas() {
 
 
 
-                            : "pending"
+                            : reserva.estado === "VENCIDA" ? "expired" : "pending"
 
                         }`}
 
                       >
 
-                        {reserva.estado === "APROBADA" ? "Reservada" : reserva.estado}
+                        {reserva.estado === "APROBADA" ? "Reservada" : reserva.estado === "PENDIENTE" ? reserva.metodoPagoPendiente === "Efectivo" ? "Pendiente de efectivo" : "Pendiente de pago / revisión" : reserva.estado === "VENCIDA" ? "Vencida" : reserva.estado}
 
                       </span>
-
-
-
+                      {reserva.estado === "PENDIENTE" && <small className="reserva-plazo-pago">Cupo guardado{reserva.pagoVenceEn ? ` · Pagar antes de ${fechaPlazoPago(reserva.pagoVenceEn)}` : " · Pendiente de revisión"}</small>}
+                      {reserva.estado === "VENCIDA" && <small className="reserva-plazo-pago">Plazo vencido · cupo liberado</small>}
                     </td>
 
 
@@ -2292,6 +2285,7 @@ function Reservas() {
 
 
                         <div className="table-actions">
+                          <button type="button" className="edit-button" title="Ver pagos y comprobantes" aria-label={`Ver pagos y comprobantes de ${reserva.codigo}`} onClick={() => navigate(`/pagos?reservaId=${reserva.id}`)}><ReceiptText size={16} /></button>
 
 
 
@@ -2300,6 +2294,7 @@ function Reservas() {
                             type="button"
 
                             className="edit-button"
+                            disabled={reserva.estado === "VENCIDA"}
 
                             onClick={() =>
 
@@ -2842,7 +2837,7 @@ function Reservas() {
 
 
 
-                      <option value="APROBADA">
+                      <option value="APROBADA" disabled>
 
                         Reservada
                       </option>

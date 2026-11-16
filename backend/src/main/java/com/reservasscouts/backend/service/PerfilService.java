@@ -56,6 +56,11 @@ public class PerfilService {
                 idPerfil
         );
     }
+    public java.util.Set<Integer> usuariosRegistrados() {
+        return usuarios.filtrar(null,null,null).stream()
+                .filter(u -> "Usuario".equals(u.rol()) || "Miembro".equals(u.rol()))
+                .map(u -> u.id()).collect(java.util.stream.Collectors.toSet());
+    }
 
 
     @Transactional

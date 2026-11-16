@@ -1,9 +1,11 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { chromium } = require("../frontend/node_modules/playwright");
+const { chromium } = require("../../frontend/node_modules/playwright");
 
 (async () => {
-  const raiz = path.resolve(__dirname, "..");
+  const raiz = path.resolve(__dirname, "../..");
+  fs.mkdirSync(path.join(raiz, "output/pdf"), { recursive: true });
+  fs.mkdirSync(path.join(raiz, "tmp/pdf-qa"), { recursive: true });
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   try {
     for (const [nombre, codigo, metodo, monto, referencia] of [

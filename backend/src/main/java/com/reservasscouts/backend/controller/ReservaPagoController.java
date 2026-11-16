@@ -48,4 +48,9 @@ public class ReservaPagoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\""+archivo.nombre()+"\"")
                 .header("X-Content-Type-Options","nosniff").body(archivo.contenido());
     }
+    @PostMapping(value="/api/pagos/{id}/comprobante",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String,Boolean> adjuntar(@PathVariable int id,@RequestPart("comprobante") MultipartFile archivo) throws Exception {
+        service.adjuntarComprobante(id,archivo);
+        return Map.of("ok",true);
+    }
 }

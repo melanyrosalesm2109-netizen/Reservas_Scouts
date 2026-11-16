@@ -1,28 +1,48 @@
-# Playwright E2E
+# Pruebas de navegador · Playwright
 
-These browser tests exercise the local React app and Spring API against the SQL Server database configured for development.
+La carpeta incluye pruebas con API simulada y pruebas de integración que usan
+el backend y SQL Server. No requieren la misma preparación.
 
-## Prerequisites
+## Interfaz con API simulada
 
-- Start SQL Server and apply `db/migrations/001_cumplimiento.sql`.
-- Start the backend on `http://localhost:8080` with the local database credentials loaded in its process environment.
-- Set `E2E_ADMIN_PASSWORD` in the test process. `E2E_ADMIN_EMAIL` defaults to `admin@reservasscouts.com`.
-- Install project dependencies with `npm install`. The test runner launches Vite when it is not already available at `http://localhost:5173`.
-- The Playwright config uses the installed Google Chrome channel by default. Set `PLAYWRIGHT_CHANNEL` to another Playwright-supported installed browser when needed.
-
-## Run
-
-From `frontend/`:
+Estos ejemplos comprueban pantallas, cálculos, navegación y adaptación a
+celular sin modificar la base de datos:
 
 ```powershell
-$env:E2E_ADMIN_PASSWORD = '<local admin password>'
+cd frontend
+npx playwright test e2e/dashboard-charts.spec.js e2e/profile-modern.spec.js e2e/backup-restore.spec.js e2e/cash-reservation-policy.spec.js
+```
+
+Playwright inicia Vite en `http://localhost:5173` o reutiliza el servidor activo.
+El navegador se configura en `playwright.config.js`: Chrome o Edge instalado,
+con posibilidad de definir `PLAYWRIGHT_CHANNEL`.
+
+## Integración con la API y SQL Server
+
+1. Preparar SQL Server y las migraciones actuales según [db/README.md](../../db/README.md).
+2. Iniciar el backend en `http://localhost:8080` con sus variables de entorno.
+3. Definir `E2E_ADMIN_PASSWORD` en el proceso de pruebas. Opcionalmente definir
+   `E2E_ADMIN_EMAIL`; el valor predeterminado es `admin@reservasscouts.com`.
+4. Ejecutar desde `frontend/`:
+
+```powershell
+$env:E2E_ADMIN_PASSWORD = '<contraseña local de pruebas>'
 npm run test:e2e
 ```
 
-The reservation journey creates a uniquely named user, profile, space, and reservation through the application, then removes those records in teardown. Authentication and database audit entries are intentionally retained by the audit trail. Do not run this suite against production data.
+La suite completa contiene recorridos que crean cuentas, perfiles, espacios y
+reservas y luego limpian sus fixtures. La auditoría se conserva. Ejecutar estos
+recorridos únicamente sobre una base local de pruebas.
 
-## Coverage
+Las pruebas de restauración SQL tienen preparación y activación adicionales;
+consultar [db/tests/README.md](../../db/tests/README.md).
 
-- Invalid login, successful admin login, persisted server session, logout, and protected-route rejection.
-- Anonymous and regular-user API authorization, regular-user reservation creation, database read-back, and session-derived creator identity.
-- Admin-only audit and backup screens plus persistence of login audit and backup-catalog data.
+## Resultados
+
+- `frontend/test-results/`: trazas y diagnósticos de ejecución.
+- `frontend/playwright-report/`: informe HTML cuando se solicita.
+- `.docwork/previews/`: capturas reproducibles para revisar el diseño.
+
+Estas carpetas están excluidas de Git y se pueden regenerar. Los comprobantes
+ficticios utilizados por algunas pruebas viven en [output/](../../output/README.md)
+y se conservan como recursos del proyecto.

@@ -812,7 +812,10 @@ public List<ReservaFechaOcupada> listarFechasOcupadas() {
                         ? null
                         : fin.toLocalDateTime(),
 
-                rs.getString("estado")
+                rs.getString("estado"),
+                rs.getObject("espacioId",Integer.class),
+                rs.getString("metodoPagoPendiente"),
+                rs.getTimestamp("pagoVenceEn")==null?null:rs.getTimestamp("pagoVenceEn").toLocalDateTime()
         );
     }
 

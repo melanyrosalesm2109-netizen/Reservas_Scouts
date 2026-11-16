@@ -1,4 +1,20 @@
 /* Shared responsive surfaces and controls, scoped to the application. */
+html { scroll-padding-top: 100px; }
+img, video { max-width: 100%; }
+.main-content > *, .main-content section, .main-content form { min-width: 0; }
+.main-content :is(.reservas-table-wrapper, .espacios-table-wrapper, .pagos-table-wrapper, .perfiles-table-wrapper, .usuarios-table-wrapper, .audit-table-wrap, .dashboard-table-wrapper) { max-width: 100%; overflow-x: auto; }
+.main-content .pagos-filtros { grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); }
+.main-content .pagos-stats-gestion { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+.main-content .pago-stat strong { overflow-wrap: anywhere; }
+.topbar-panel { max-height: calc(100dvh - 110px); overflow-y: auto; overscroll-behavior: contain; }
+:is(.pago-gestion-dialog, .comprobante-dialog, .rechazo-pago-dialog) { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto; overscroll-behavior: contain; }
+:is(.pago-gestion-dialog, .comprobante-dialog, .rechazo-pago-dialog) :is(header, footer) { flex-shrink: 0; }
+:is(.pago-gestion-dialog, .comprobante-dialog) header > div { min-width: 0; overflow-wrap: anywhere; }
+:is(.pago-gestion-dialog, .comprobante-dialog) header > button { flex-shrink: 0; align-self: flex-start; }
+.pago-gestion-dialog > form, .pago-detalle-cuerpo { min-height: 0; min-width: 0; }
+.pago-detalle-cuerpo dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pago-detalle-cuerpo dd { overflow-wrap: anywhere; }
+.pago-gestion-dialog footer { flex-wrap: wrap; }
 .main-content { padding: clamp(22px, 2.5vw, 40px); }
 .main-content > div { width: 100%; min-width: 0; }
 .main-content :is(h1, h2, h3, p) { overflow-wrap: anywhere; }
@@ -32,6 +48,23 @@
   .comprobante-dialog header button { flex-shrink: 0; }
 }
 @media (max-width: 640px) {
+  html { scroll-padding-top: 170px; }
+  .main-content .pagos-stats-gestion { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .main-content .pagos-stats-gestion .pago-stat:last-child { grid-column: 1 / -1; }
+  .main-content .pagos-page .pagos-table td:first-child { min-width: 0; }
+  .main-content .pagos-table.responsive-data-table tbody td { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .main-content .pago-actions-gestion { flex-direction: column; align-items: stretch; }
+  .main-content .pago-scroll-ayuda { display: none; }
+  .pagos-tabs button { flex: 1 1 140px; white-space: normal; }
+  .pago-detalle-cuerpo dl { grid-template-columns: minmax(0, 1fr); }
+  :is(.pago-gestion-dialog, .comprobante-dialog, .rechazo-pago-dialog) :is(input, select, textarea) { font-size: 16px; min-width: 0; max-width: 100%; }
+  :is(.pago-gestion-dialog, .comprobante-dialog, .rechazo-pago-dialog) :is(button, a) { min-height: 44px; }
+  .pago-gestion-dialog > form, .pago-detalle-cuerpo { padding: 16px; }
+  .pago-gestion-dialog footer { padding: 12px 0; }
+  .pago-gestion-dialog footer button { flex: 1 1 120px; }
+  .comprobante-revision { flex-shrink: 0; max-height: 45dvh; }
+  .comprobante-dialog footer { padding: 12px; gap: 8px; }
+  .comprobante-dialog footer span { flex-basis: 100%; overflow-wrap: anywhere; }
   .main-content { padding: 24px 14px 36px; }
   .main-content h1 { font-size: 30px; }
   .main-content :is(input, select, textarea), .public-auth-dialog :is(input,select,textarea), .rechazo-pago-dialog textarea { font-size: 16px; }
@@ -79,10 +112,17 @@
   .public-photo-arrows button { width: 44px; height: 44px; }
 }
 @media (max-width: 370px) {
+  .main-content .pagos-stats-gestion { grid-template-columns: minmax(0, 1fr); }
   .topbar-user-info span { max-width: 92px; }
   .topbar-account { gap: 8px; }
   .topbar-logout { gap: 5px; padding: 0 8px; }
   .topbar-brand h2 { font-size: 20px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .topbar { position: relative; }
+  .topbar-panel { max-height: 65dvh; }
+  :is(.reservation-modal-overlay, .espacio-modal-overlay, .pago-modal-overlay, .perfil-modal-overlay, .usuario-modal-overlay, .audit-modal-backdrop) { padding: 8px; }
+  :is(.reservation-modal, .espacio-modal, .pago-modal, .perfil-modal, .usuario-modal, .audit-modal) { max-height: calc(100dvh - 16px); overflow: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .main-content *, .topbar * { animation: none !important; transition: none !important; } }
 @media (min-width: 360px) and (max-width: 640px) {

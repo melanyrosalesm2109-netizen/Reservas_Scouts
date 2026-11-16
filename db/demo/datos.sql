@@ -184,7 +184,7 @@ WHERE NOT EXISTS (SELECT 1 FROM dbo.espacios e WITH (UPDLOCK, HOLDLOCK) WHERE e.
              N'Grupo Scout Norte', N'Responsable Demo Norte', N'8888-1111',
              N'grupo1@reservasscouts.test', 25, N'Campamento',
              @fechaReserva1, DATEADD(HOUR, 8, @fechaReserva1), N'PENDIENTE',
-             N'Reserva de demostración generada por db/datos.sql.', @ahora, @ahora);
+             N'Reserva de demostración generada por db/demo/datos.sql.', @ahora, @ahora);
 
     IF NOT EXISTS (SELECT 1 FROM dbo.reservas WHERE codigo = N'RES-002')
         INSERT INTO dbo.reservas
@@ -196,7 +196,7 @@ WHERE NOT EXISTS (SELECT 1 FROM dbo.espacios e WITH (UPDLOCK, HOLDLOCK) WHERE e.
              N'Grupo Scout Sur', N'Responsable Demo Sur', N'8888-2222',
              N'grupo2@reservasscouts.test', 18, N'Taller',
              @fechaReserva2, DATEADD(HOUR, 3, @fechaReserva2), N'APROBADA',
-             N'Reserva de demostración generada por db/datos.sql.', @ahora, @ahora);
+             N'Reserva de demostración generada por db/demo/datos.sql.', @ahora, @ahora);
 
     DECLARE @reserva1Id INT;
     DECLARE @reserva2Id INT;

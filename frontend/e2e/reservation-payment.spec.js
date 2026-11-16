@@ -95,15 +95,14 @@ test("reception downloads the receipt and verifies the pending payment", async (
   });
   await page.goto("/pagos");
   const row = page.getByRole("row").filter({ hasText: "PRUEBA-PAGO" });
-  await row.getByRole("button", { name: "Ver comprobante" }).click();
+  await row.getByRole("button", { name: "Revisar comprobante" }).click();
   const visor = page.getByRole("dialog", { name: "Comprobante de pago" });
   await expect(visor.locator("iframe")).toBeVisible();
   const descarga = page.waitForEvent("download");
   await visor.getByRole("link", { name: "Descargar comprobante" }).click();
   expect((await descarga).suggestedFilename()).toBe("comprobante.pdf");
-  await visor.getByRole("button", { name: "Cerrar", exact: true }).click();
   page.once("dialog", dialog => dialog.accept());
-  await row.getByRole("button", { name: "Verificar pago" }).click();
+  await visor.getByRole("button", { name: "Aprobar pago" }).click();
   await expect(row.getByText("PAGADO", { exact: true })).toBeVisible();
 });
 
@@ -118,7 +117,7 @@ test("previews the actual demo image and closes with Escape", async ({ page }) =
     return route.fulfill({ json: [{ id: 100, reservaCodigo: "DEMO-FLUJO-002", espacio: "Campo Demo", monto: 25000, metodo: "SINPE M\u00f3vil", fechaPago: "2026-11-14", estado: "PENDIENTE", comprobante: "Comprobante adjunto" }] });
   });
   await page.goto("/pagos");
-  await page.getByRole("button", { name: "Ver comprobante" }).click();
+  await page.getByRole("button", { name: "Revisar comprobante" }).click();
   const visor = page.getByRole("dialog", { name: "Comprobante de pago" });
   const imagen = visor.getByRole("img");
   await expect(imagen).toBeVisible();

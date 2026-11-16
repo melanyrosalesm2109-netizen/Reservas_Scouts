@@ -59,9 +59,9 @@ test("create forms remain within mobile screen and controls stay reachable", asy
   test.setTimeout(90000);
   expect((await page.request.post("http://localhost:8080/api/usuarios/login", { data: getAdminCredentials() })).ok()).toBe(true);
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const [route, button, modal] of [["espacios", "Nuevo espacio", ".espacio-modal"], ["usuarios", "Nuevo usuario", ".usuario-modal"], ["pagos", "Nuevo pago", ".pago-modal"], ["reservas", "Nueva reserva", ".reservation-modal"]]) {
+  for (const [route, button, modal] of [["espacios", "Nuevo espacio", ".espacio-modal"], ["usuarios", "Nuevo usuario", ".usuario-modal"], ["pagos", "Registrar cobro", ".pago-gestion-dialog"], ["reservas", "Nueva reserva", ".reservation-modal"]]) {
     await page.goto(`/${route}`);
-    await page.getByRole("button", { name: button, exact: true }).click();
+    await page.locator(`.${route}-header`).getByRole("button", { name: button, exact: true }).click();
     const dialog = page.locator(modal);
     await expect(dialog).toBeVisible();
     const box = await dialog.boundingBox();

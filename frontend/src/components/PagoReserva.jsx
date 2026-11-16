@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { bloquearHorario, liberarHorario } from "../services/reservaPagoService";
+import { bloquearHorario, liberarHorario, consultarPoliticaPago } from "../services/reservaPagoService";
+import { fechaPlazoPago } from "../services/pagoGestionService";
 import "./PagoReserva.css";
 
 export default function PagoReserva({ espacio, inicio, fin, disponible, procesando, onCambio }) {
@@ -9,6 +10,13 @@ export default function PagoReserva({ espacio, inicio, fin, disponible, procesan
   const [intento, setIntento] = useState(0);
   const [metodo, setMetodo] = useState("");
   const [archivo, setArchivo] = useState(null);
+  const [politica, setPolitica] = useState(null);
+  useEffect(() => {
+    let vigente = true;
+    consultarPoliticaPago().then(datos => { if (vigente && Number.isFinite(datos?.efectivoGraciaMinutos)) setPolitica(datos); }).catch(() => {});
+    return () => { vigente = false; };
+  }, []);
+  const limite = politica && inicio && fin ? Math.min(Date.parse(`${inicio}-06:00`) + politica.efectivoGraciaMinutos * 60000, Date.parse(`${fin}-06:00`)) : NaN;
   const [errorArchivo, setErrorArchivo] = useState("");
   const [tarjeta, setTarjeta] = useState({ numero: "", titular: "", vencimiento: "", cvv: "" });
   const rango = `${espacio?.id || ""}|${inicio}|${fin}`;
@@ -73,7 +81,7 @@ export default function PagoReserva({ espacio, inicio, fin, disponible, procesan
         }} />
         {errorArchivo && <p role="alert">{errorArchivo}</p>}
       </div>}
-      {metodo === "Efectivo" && <p>Al confirmar, tu reserva quedará registrada. El pago en efectivo quedará pendiente para el día de llegada.</p>}
+      {metodo === "Efectivo" && <p>Tu cupo quedará guardado y la reserva pendiente de pago. Se aprobará al confirmar el efectivo recibido. {Number.isFinite(limite) ? `Puedes pagar hasta el ${fechaPlazoPago(new Date(limite).toISOString())}.` : "Consulta el plazo de pago en Mis reservas."} Al vencer sin pago se libera el cupo.</p>}
       {metodo === "Tarjeta" && <div>
         <p>Simulación sin cobro real. Usa 4242 4242 4242 4242, código 123 y un vencimiento vigente. Otros números se rechazan. No ingreses datos de una tarjeta real.</p>
         <div className="pago-tarjeta-grid">

@@ -5,6 +5,7 @@ import { verificarPago } from "../services/reservaPagoService";
 import { esPendiente } from "../services/notificacionService";
 import ComprobanteViewer from "../components/ComprobanteViewer";
 import "./Notificaciones.css";
+import { fechaPlazoPago } from "../services/pagoGestionService";
 
 const moneda = monto => Number(monto || 0).toLocaleString("es-CR", { style: "currency", currency: "CRC" });
 const fecha = valor => valor ? new Date(valor).toLocaleString("es-CR", { timeZone: "America/Costa_Rica", dateStyle: "medium", timeStyle: "short" }) : "Sin fecha";
@@ -19,14 +20,13 @@ export default function Notificaciones() {
   const [motivo, setMotivo] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [errorAccion, setErrorAccion] = useState("");
-  const hoy = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Costa_Rica" }).format(new Date());
   const revisar = notificaciones.filter(n => esPendiente(n) && n.metodo !== "Efectivo");
   const efectivo = notificaciones.filter(n => esPendiente(n) && n.metodo === "Efectivo");
   const reservas = notificaciones.filter((n, i, lista) => lista.findIndex(otra => otra.reservaId === n.reservaId) === i);
   const historial = notificaciones.filter(n => n.pagoId && !esPendiente(n));
   const pestañas = [
     { id: "revisar", texto: "Pagos por revisar", cantidad: revisar.length },
-    { id: "efectivo", texto: "Efectivo al llegar", cantidad: efectivo.length },
+    { id: "efectivo", texto: "Efectivo por cobrar", cantidad: efectivo.length },
     { id: "reservas", texto: "Reservas realizadas", cantidad: reservas.length },
     { id: "historial", texto: "Historial", cantidad: historial.length }
   ];
@@ -58,28 +58,28 @@ export default function Notificaciones() {
         {p.texto}<span>{p.cantidad}</span></button>)}
     </div>
     <section id="notificaciones-lista" role="tabpanel" aria-label={pestañas.find(p => p.id === tab).texto}>
-      {tab === "efectivo" && <p className="notificaciones-ayuda">La reserva ya está confirmada. Registra el efectivo únicamente al recibirlo, desde el día de llegada.</p>}
+      {tab === "efectivo" && <p className="notificaciones-ayuda">El cupo está guardado y la reserva sigue pendiente. Registra el efectivo al recibirlo para aprobarla, incluso antes de la llegada.</p>}
       {cargando ? <p role="status">Cargando notificaciones…</p> : datos.length === 0 ? <div className="notificaciones-vacio"><CheckCircle2 size={38} /><h2>No hay notificaciones en esta bandeja</h2><p>Los nuevos registros aparecerán automáticamente.</p></div> :
         datos.map(n => {
           const pendiente = esPendiente(n) && ["revisar", "efectivo"].includes(tab);
-          const llegadaFutura = n.fechaInicio.slice(0, 10) > hoy;
           return <article className="notificacion-card" key={tab === "reservas" ? n.reservaId : n.pagoId}>
             <div className="notificacion-cabecera"><div><strong>{n.codigo}</strong><h2>{n.espacio}</h2><p>{n.solicitante} · {n.participantes} participantes</p></div>
-              <span className={`notificacion-estado ${pendiente ? "pendiente" : ""}`}>{pendiente ? n.metodo === "Efectivo" ? "Por cobrar al llegar" : "Comprobante por revisar" : n.reservaEstado === "APROBADA" ? "Reservada" : n.reservaEstado}</span></div>
+              <span className={`notificacion-estado ${pendiente ? "pendiente" : ""}`}>{pendiente ? n.metodo === "Efectivo" ? "Efectivo pendiente" : "Comprobante por revisar" : n.reservaEstado === "APROBADA" ? "Reservada" : n.reservaEstado}</span></div>
             <div className="notificacion-detalles"><p><Clock3 size={15} />{fecha(n.fechaInicio)} — {fecha(n.fechaFin)}</p>
               <p><ReceiptText size={15} />{n.metodo || "Sin método de pago"}{n.pagoId ? ` · ${moneda(n.monto)} · ${n.pagoEstado}` : ""}</p></div>
+            {pendiente && n.pagoVenceEn && <p className="notificacion-revision">Pagar antes de {fechaPlazoPago(n.pagoVenceEn)}. Al vencer sin pago se libera el cupo.</p>}
+            {n.reservaEstado === "VENCIDA" && <p className="notificacion-revision">Plazo de pago vencido. El cupo fue liberado y el historial se conserva.</p>}
             {n.revisadoPor && <p className="notificacion-revision">Revisado por {n.revisadoPor} · {fecha(n.revisadaEn)}{n.motivo ? ` · Motivo: ${n.motivo}` : ""}</p>}
             {n.metodo === "Tarjeta" && n.pagoEstado === "PAGADO" && <p className="notificacion-revision">Tarjeta simulada aprobada automáticamente.</p>}
             <div className="notificacion-acciones">
               {n.tieneComprobante && <button type="button" onClick={() => setComprobante({ id: n.pagoId, reservaCodigo: n.codigo, metodo: n.metodo, estado: n.pagoEstado })}>Ver comprobante</button>}
               <Link to={`/reservas?espacioId=${n.espacioId || ""}&codigo=${encodeURIComponent(n.codigo)}`}>Ver reserva</Link>
               {pendiente && <>
-                <button type="button" className="notificacion-aprobar" disabled={procesando !== null || (n.metodo === "Efectivo" ? llegadaFutura : !n.tieneComprobante)}
+                <button type="button" className="notificacion-aprobar" disabled={procesando !== null || (n.metodo !== "Efectivo" && !n.tieneComprobante)}
                   onClick={() => void resolver(n, true)}>{n.metodo === "Efectivo" ? "Registrar efectivo recibido" : "Aprobar pago"}</button>
                 <button type="button" disabled={procesando !== null} onClick={() => { setRechazando(n.pagoId); setMotivo(""); }}>Rechazar</button>
               </>}
             </div>
-            {pendiente && n.metodo === "Efectivo" && llegadaFutura && <p className="notificacion-revision">Disponible para registrar el cobro desde el {n.fechaInicio.slice(0, 10)}.</p>}
             {pendiente && n.metodo !== "Efectivo" && !n.tieneComprobante && <p role="status">Falta el comprobante. No se puede aprobar todavía.</p>}
             {pendiente && rechazando === n.pagoId && <form className="notificacion-rechazo" onSubmit={e => { e.preventDefault(); void resolver(n, false); }}>
               <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p><label htmlFor={`motivo-${n.pagoId}`}>Motivo del rechazo <span className="required-mark" aria-hidden="true">*</span></label><textarea id={`motivo-${n.pagoId}`} value={motivo} onChange={e => setMotivo(e.target.value)} required maxLength={500} />

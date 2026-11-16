@@ -1167,3 +1167,9 @@
 
 .reserva-solicitante-propio { padding: 12px; border: 1px solid #d9d4ca; border-radius: 8px; background: #f0f5f3; }
 .reserva-solicitante-propio p { margin: 5px 0 0; font-size: 12px; color: #536c78; line-height: 1.5; }
+
+.reserva-plazo-pago { display: block; max-width: 240px; margin-top: 7px; color: #6d7e85; font-size: 10px; line-height: 1.6; white-space: normal; }
+
+.reservation-status.expired { color: #65727a; background: #edf0f1; }
+
+@media(max-width:640px) { .main-content table.responsive-data-table .reserva-plazo-pago { grid-column: 2; max-width: 100%; } }

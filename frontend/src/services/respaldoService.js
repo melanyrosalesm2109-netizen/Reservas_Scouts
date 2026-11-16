@@ -1,4 +1,4 @@
-﻿import { apiFetch } from "./api";
+import { apiFetch } from "./api";
 
 const API_URL = `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/respaldo`;
 
@@ -18,11 +18,11 @@ export async function crearRespaldo() {
   return procesarRespuesta(await apiFetch(API_URL, { method: "POST" }));
 }
 
-export async function restaurarRespaldo(nombreArchivo, confirmacion) {
+export async function restaurarRespaldo(nombreArchivo) {
   return procesarRespuesta(await apiFetch(`${API_URL}/restaurar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nombreArchivo, confirmacion })
+    body: JSON.stringify({ nombreArchivo })
   }));
 }
 

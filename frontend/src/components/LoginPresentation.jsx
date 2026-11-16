@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, MapPin, Menu, Pause, Play, ShieldCheck, TentTree, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, MapPin, Menu, ShieldCheck, TentTree, X } from "lucide-react";
 import "./LoginPresentation.css";
 
 const slides = [
@@ -23,11 +23,34 @@ const social = [
 function SocialLinks() {
   return <div className="public-social-links">{social.map(({ name, href, icon: Icon }) => <a key={name} href={href} target="_blank" rel="noopener noreferrer"><Icon size={21} /><span>{name}</span></a>)}<a href="https://www.tiktok.com/@guiasyscoutscr" target="_blank" rel="noopener noreferrer"><span className="public-tiktok" aria-hidden="true">♪</span><span>TikTok</span></a></div>;
 }
-function SiteLinks() {
-  return <><a href="#inicio">Inicio</a><a href="#lugares">Espacios</a><a href="#comunidad">Comunidad</a></>;
+function SiteLinks({ active }) {
+  return <>{[["inicio", "Inicio"], ["lugares", "Espacios"], ["comunidad", "Comunidad"]].map(([id, label]) =>
+    <a key={id} href={`#${id}`} aria-current={active === id ? "location" : undefined}>{label}</a>)}</>;
 }
 export default function LoginPresentation({ children }) {
   const dialogRef = useRef(null);
+  const menuRef = useRef(null);
+  const [active, setActive] = useState(() => window.location.hash.slice(1) || "inicio");
+  useEffect(() => {
+    const update = () => setActive(window.location.hash.slice(1) || "inicio");
+    const closeOutside = event => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) menuRef.current.open = false;
+    };
+    const closeEscape = event => {
+      if (event.key === "Escape" && menuRef.current?.open) {
+        menuRef.current.open = false;
+        menuRef.current.querySelector("summary")?.focus();
+      }
+    };
+    window.addEventListener("hashchange", update);
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeEscape);
+    return () => {
+      window.removeEventListener("hashchange", update);
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeEscape);
+    };
+  }, []);
   const [accessOpen, setAccessOpen] = useState(false);
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -40,13 +63,6 @@ export default function LoginPresentation({ children }) {
     dialog.close();
   }, [accessOpen]);
   const [slide, setSlide] = useState(0);
-  const [playing, setPlaying] = useState(() => !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const [hovering, setHovering] = useState(false);
-  useEffect(() => {
-    if (!playing || hovering) return;
-    const timer = window.setInterval(() => setSlide(current => (current + 1) % slides.length), 6500);
-    return () => window.clearInterval(timer);
-  }, [playing, hovering]);
   const current = slides[slide];
   return (
     <div className="public-login" id="inicio" onClick={event => {
@@ -59,9 +75,9 @@ export default function LoginPresentation({ children }) {
       <header className="public-header">
         <div className="public-header-main">
           <a href="#inicio" className="public-brand" aria-label="Reservas Scouts, inicio"><span className="public-brand-mark"><TentTree size={29} /></span><span><strong>Reservas</strong><small>SCOUTS · COSTA RICA</small></span></a>
-          <nav className="public-desktop-nav" aria-label="Navegación de bienvenida"><SiteLinks /></nav>
+          <nav className="public-desktop-nav" aria-label="Navegación de bienvenida"><SiteLinks active={active} /></nav>
           <div className="public-header-actions">
-            <details className="public-mobile-menu"><summary><Menu size={19} />Menú<ChevronDown size={14} /></summary><nav aria-label="Menú de bienvenida" onClick={event => { if (event.target.closest("a")) event.currentTarget.closest("details").open = false; }}><SiteLinks /></nav></details>
+            <details className="public-mobile-menu" ref={menuRef}><summary aria-label="Menú de navegación"><Menu size={19} />Menú<ChevronDown size={14} /></summary><nav aria-label="Menú de bienvenida" onClick={event => { if (event.target.closest("a")) event.currentTarget.closest("details").open = false; }}><span className="public-menu-label">EXPLORA RESERVAS SCOUTS</span><SiteLinks active={active} /></nav></details>
             <a className="public-signin" href="#acceso">Iniciar sesión<ArrowUpRight size={15} /></a>
           </div>
         </div>
@@ -76,9 +92,9 @@ export default function LoginPresentation({ children }) {
             <div className="public-hero-actions"><a className="public-primary" href="#lugares">Explorar espacios<ArrowRight size={18} /></a><a className="public-text-link" href="#acceso">Ya tengo una cuenta<ArrowUpRight size={16} /></a></div>
             <div className="public-hero-note"><span><CalendarDays size={16} />Consulta disponibilidad</span><span><ShieldCheck size={16} />Da seguimiento a tu reserva</span></div>
           </div>
-          <div className="public-hero-gallery" aria-label="Galería de bienvenida" aria-roledescription="carrusel" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)} onFocus={() => setHovering(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setHovering(false); }}>
+          <div className="public-hero-gallery" aria-label="Galería de bienvenida" aria-roledescription="carrusel">
             <div className="public-photo"><img src={current.image} alt={current.alt} fetchPriority="high" /><div className="public-photo-shade" /><div className="public-photo-top"><span><TentTree size={14} />EXPLORA · CONECTA · COMPARTE</span><span>0{slide + 1} / 03</span></div><div className="public-photo-caption"><h2>{current.title}</h2><p>{current.text}</p></div><div className="public-photo-arrows"><button type="button" aria-label="Imagen anterior" onClick={() => setSlide((slide + slides.length - 1) % slides.length)}><ChevronLeft size={20} /></button><button type="button" aria-label="Siguiente imagen" onClick={() => setSlide((slide + 1) % slides.length)}><ChevronRight size={20} /></button></div></div>
-            <div className="public-gallery-bottom"><span>ESPACIOS QUE INSPIRAN</span><div className="public-gallery-dots">{slides.map((item, index) => <button key={item.image} type="button" aria-label={`Mostrar imagen ${index + 1}`} aria-pressed={slide === index} onClick={() => setSlide(index)} />)}<button className="public-play" type="button" aria-label={playing ? "Pausar carrusel" : "Reproducir carrusel"} onClick={() => setPlaying(!playing)}>{playing ? <Pause size={13} /> : <Play size={13} />}</button></div></div>
+            <div className="public-gallery-bottom"><span>ESPACIOS QUE INSPIRAN</span></div>
           </div>
         </section>
         <section className="public-locations" id="lugares" aria-labelledby="public-locations-title">
@@ -93,8 +109,8 @@ export default function LoginPresentation({ children }) {
           {children}
         </div>
       </dialog>
-      <section id="comunidad" className="public-community" aria-labelledby="public-community-title"><div><p className="public-eyebrow">GUÍAS Y SCOUTS DE COSTA RICA</p><h2 id="public-community-title">La aventura continúa<br />fuera de aquí.</h2><p>Conoce sus actividades, noticias y comunidad.</p></div><SocialLinks /></section>
-      <footer className="public-footer"><span>Reservas Scouts</span><p>Encuentra tu lugar. Comparte la experiencia.</p><a href="#inicio">Volver arriba ↑</a></footer>
+      <section id="comunidad" className="public-community" aria-labelledby="public-community-title"><div><p className="public-eyebrow">GUÍAS Y SCOUTS DE COSTA RICA</p><h2 id="public-community-title">La aventura continúa<br />fuera de aquí.</h2><p>Conoce sus actividades, noticias y comunidad.</p></div><SocialLinks /><footer className="public-footer">© 2026</footer></section>
+
     </div>
   );
 }

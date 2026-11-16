@@ -17,8 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class NotificacionesRevisionConcurrenteTest {
     @Autowired ReservaPagoService checkout;
     @Autowired PagoService pagos;
+    @Autowired com.reservasscouts.backend.repository.PagoRepository limpiezaPagos;
     @Autowired ReservaService reservas;
     @Autowired NotificacionController notificaciones;
+    @Autowired CobroService cobros;
 
     @Test void dosRevisoresNoPuedenProcesarElMismoPago() throws Exception {
         int usuario=Integer.parseInt(System.getenv("RESERVAS_SQL_USUARIO"));
@@ -60,9 +62,39 @@ class NotificacionesRevisionConcurrenteTest {
             assertNotNull(avisos.get(0).revisadoPor());
             assertNotNull(avisos.get(0).revisadaEn());
         } finally {
-            if(pagoId!=null) pagos.eliminar(pagoId);
+            if(pagoId!=null) limpiezaPagos.eliminar(pagoId);
             if(reservaId!=null) reservas.eliminar(reservaId);
             checkout.liberar(token,usuario);
+        }
+    }
+
+    @Test void dosCobrosSimultaneosSoloCreanUnPagoPendiente() throws Exception {
+        int usuario=Integer.parseInt(System.getenv("RESERVAS_SQL_USUARIO"));
+        int perfil=Integer.parseInt(System.getenv("RESERVAS_SQL_PERFIL"));
+        int espacio=Integer.parseInt(System.getenv("RESERVAS_SQL_ESPACIO"));
+        var inicio=LocalDate.now(ZoneId.of("America/Costa_Rica")).plusDays(321).atTime(8,0);
+        int reserva=reservas.insertar(new ReservaRequest("IT-COBRO-"+UUID.randomUUID().toString().substring(0,8),espacio,perfil,usuario,null,
+                "Prueba temporal","00000000","prueba@example.com",1,"Cobro concurrente",inicio,inicio.plusHours(2),"PENDIENTE",null)).id();
+        try {
+            var iniciar=new CountDownLatch(1);
+            try(var pool=Executors.newFixedThreadPool(2)) {
+                var resultados=new ArrayList<Future<Boolean>>();
+                for(int i=0;i<2;i++) resultados.add(pool.submit(()-> {
+                    iniciar.await();
+                    try { cobros.registrar(new CobroService.Solicitud(reserva,"Efectivo",null),null);return true; }
+                    catch(org.springframework.dao.DataAccessException ex) {
+                        assertEquals(51017,((java.sql.SQLException)ex.getMostSpecificCause()).getErrorCode());return false;
+                    }
+                }));
+                iniciar.countDown();
+                int aceptados=0;
+                for(var resultado:resultados) if(resultado.get(20,TimeUnit.SECONDS)) aceptados++;
+                assertEquals(1,aceptados);
+            }
+            assertEquals(1,pagos.filtrar(reserva,null,null,null,null,null).size());
+        } finally {
+            for(var pago:pagos.filtrar(reserva,null,null,null,null,null)) pagos.eliminar(pago.id());
+            reservas.eliminar(reserva);
         }
     }
 }

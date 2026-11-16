@@ -1,5 +1,5 @@
 # Genera comprobantes PNG ficticios solo para reservas con codigo DEMO-.
-param([string]$Servidor = 'localhost')
+param([string]$Servidor = 'localhost', [switch]$SoloRevision)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Data
@@ -18,6 +18,9 @@ AND p.metodo IN(N'SINPE M' + NCHAR(243) + N'vil',N'Transferencia bancaria')
 AND NOT EXISTS(SELECT 1 FROM dbo.pagoComprobantes c WHERE c.pagoId=p.id)
 ORDER BY p.id
 '@
+    if ($SoloRevision) {
+        $consulta.CommandText = $consulta.CommandText.Replace("r.codigo LIKE N'DEMO-%'", "r.codigo LIKE N'DEMO-COMP-%'")
+    }
     $tabla = New-Object System.Data.DataTable
     $lector = $consulta.ExecuteReader()
     $tabla.Load($lector)
@@ -28,7 +31,9 @@ ORDER BY p.id
         $grafico = [System.Drawing.Graphics]::FromImage($imagen)
         $grafico.Clear([System.Drawing.Color]::White)
         $grafico.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
-        $azul = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(18,56,75))
+        $esSinpe = $pago.metodo.StartsWith('SINPE')
+        $colorCabecera = if ($esSinpe) { [System.Drawing.Color]::FromArgb(25,94,76) } else { [System.Drawing.Color]::FromArgb(18,56,75) }
+        $azul = New-Object System.Drawing.SolidBrush($colorCabecera)
         $gris = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(70,80,85))
         $rojo = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(150,45,40))
         $titulo = New-Object System.Drawing.Font('Arial',22,[System.Drawing.FontStyle]::Bold)
@@ -38,12 +43,14 @@ ORDER BY p.id
             $grafico.FillRectangle($azul,0,0,900,110)
             $grafico.DrawString('COMPROBANTE DE DEMOSTRACION',$titulo,[System.Drawing.Brushes]::White,35,35)
             $grafico.DrawString('NO REPRESENTA UN PAGO REAL',$aviso,$rojo,35,135)
+            $montoIlustrativo = [decimal]$pago.monto
+            if ($pago.codigo -like 'DEMO-COMP-*-R') { $montoIlustrativo += 1000 }
             $lineas = @(
                 ('Reserva: ' + $pago.codigo),
                 ('Referencia ficticia: DEMO-COMP-' + $pago.id),
                 ('Metodo: ' + $pago.metodo),
-                ('Monto ilustrativo: CRC ' + ([decimal]$pago.monto).ToString('N2',[System.Globalization.CultureInfo]::InvariantCulture)),
-                ('Estado del ejemplo: ' + $pago.estado)
+                ('Monto ilustrativo: CRC ' + $montoIlustrativo.ToString('N2',[System.Globalization.CultureInfo]::InvariantCulture)),
+                ('Canal ficticio: ' + $(if ($esSinpe) { 'SINPE MOVIL - DEMO' } else { 'TRANSFERENCIA BANCARIA - DEMO' }))
             )
             $y = 195
             foreach ($linea in $lineas) {
@@ -73,7 +80,7 @@ ORDER BY p.id
                     $transaccion.Commit()
                 } catch { $transaccion.Rollback(); throw }
                 if ($cantidad -eq 0) {
-                    $vista = Join-Path $PSScriptRoot '..\tmp\demo_comprobantes'
+                    $vista = Join-Path $PSScriptRoot '..\..\tmp\demo_comprobantes'
                     [void](New-Item -ItemType Directory -Force -Path $vista)
                     [System.IO.File]::WriteAllBytes((Join-Path $vista 'comprobante_demo.png'),$contenido)
                 }

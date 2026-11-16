@@ -1,592 +1,124 @@
 package com.reservasscouts.backend.service;
 
 import com.reservasscouts.backend.model.RespaldoArchivo;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-
+import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.*;
 
 @Service
 public class RespaldoService {
-
-    private static final String MAINTENANCE_USER =
-            "reservas_maintenance";
-
-    private static final String JDBC_PREFIX =
-            "jdbc:sqlserver://localhost:1433;"
-                    + "encrypt=true;"
-                    + "trustServerCertificate=true;"
-                    + "databaseName=";
-
-    private static final Pattern BACKUP_NAME =
-            Pattern.compile(
-                    "^reservasScouts_\\d{8}_\\d{6}_[0-9a-fA-F-]{36}\\.bak$"
-            );
-
-    private static final DateTimeFormatter FILE_TIMESTAMP =
-            DateTimeFormatter.ofPattern(
-                    "yyyyMMdd_HHmmss"
-            );
-
-    private static final String RESTORE_CONFIRMATION =
-            "RESTAURAR reservasScouts";
-
-
-    private final Path backupDirectory;
-
-    private final AuditoriaAccesoService auditoriaAcceso;
-
-    private final JdbcTemplate jdbcTemplate;
-
-
-    public RespaldoService(
-            @Value("${app.backup.directory}")
-            String backupDirectory,
-
-            AuditoriaAccesoService auditoriaAcceso,
-
-            JdbcTemplate jdbcTemplate
-    ) {
-
-        this.backupDirectory =
-                Path.of(
-                        backupDirectory
-                )
-                .toAbsolutePath()
-                .normalize();
-
-        this.auditoriaAcceso =
-                auditoriaAcceso;
-
-        this.jdbcTemplate =
-                jdbcTemplate;
+    private static final Pattern NAME=Pattern.compile("^reservasScouts_\\d{8}_\\d{6}_[0-9a-fA-F-]{36}\\.bak$");
+    private final Path directory;
+    private final DataSource datasource;
+    public RespaldoService(@Value("${app.backup.directory}") String directory,DataSource datasource) {
+        this.directory=Path.of(directory).toAbsolutePath().normalize(); this.datasource=datasource;
     }
-
-
-    // =====================================================
-    // LISTAR RESPALDOS
-    // =====================================================
-
+    Connection conectar() throws SQLException {
+        String password=System.getenv("RESERVASSCOUTS_MAINTENANCE_PASSWORD");
+        if(password==null || password.isBlank()) throw new IllegalStateException("Falta configurar la cuenta de mantenimiento de respaldos.");
+        return DriverManager.getConnection("jdbc:sqlserver://localhost:1433;encrypt=true;trustServerCertificate=true;databaseName=master", "reservas_maintenance",password);
+    }
     public List<RespaldoArchivo> listar() {
-
-        return jdbcTemplate.query(
-
-                "EXEC dbo.paRespaldoListar",
-
-                (rs, rowNum) ->
-                        new RespaldoArchivo(
-                                rs.getString(
-                                        "nombre"
-                                ),
-                                rs.getTimestamp(
-                                        "creadoEn"
-                                )
-                                .toLocalDateTime(),
-                                rs.getLong(
-                                        "bytes"
-                                )
-                        )
-        );
+        try(Connection c=conectar(); Statement s=c.createStatement(); ResultSet rs=s.executeQuery("EXEC dbo.paReservasRespaldoListar")) {
+            var result=new ArrayList<RespaldoArchivo>();
+            while(rs.next()) result.add(new RespaldoArchivo(rs.getString("nombre"),rs.getTimestamp("creadoEn").toLocalDateTime(),rs.getLong("bytes")));
+            return result;
+        } catch(SQLException ex) { throw new IllegalStateException("No se pudo consultar el catalogo de respaldos de SQL Server.",ex); }
     }
-
-
-    // =====================================================
-    // CREAR RESPALDO
-    // =====================================================
-
-    public RespaldoArchivo crear(
-            Integer usuarioId,
-            String direccionIp,
-            String agenteUsuario
-    ) {
-
-        String nombre =
-                "reservasScouts_"
-                        + LocalDateTime
-                        .now()
-                        .format(
-                                FILE_TIMESTAMP
-                        )
-                        + "_"
-                        + UUID.randomUUID()
-                        + ".bak";
-
-
-        Path destino =
-                backupDirectory
-                        .resolve(
-                                nombre
-                        )
-                        .normalize();
-
-
-        validarRutaDestino(
-                destino,
-                nombre
-        );
-
-
-        String rutaSql =
-                escaparLiteral(
-                        destino.toString()
-                );
-
-
-        BackupMetadata metadata;
-
-
-        try (
-                Connection connection =
-                        conectar(
-                                "reservasScouts"
-                        );
-
-                Statement statement =
-                        connection
-                                .createStatement()
-        ) {
-
-            /*
-             * La aplicación llama al procedimiento
-             * almacenado de SQL Server.
-             *
-             * El procedimiento es el encargado
-             * de ejecutar BACKUP DATABASE.
-             */
-            statement.execute(
-
-                    "EXEC dbo.paRespaldoCompleto "
-                            + "@pRuta = N'"
-                            + rutaSql
-                            + "'"
-            );
-
-
-            /*
-             * Después de crear el respaldo,
-             * se leen sus metadatos para verificar
-             * que pertenece a reservasScouts.
-             */
-            metadata =
-                    leerEncabezado(
-                            statement,
-                            rutaSql
-                    );
-
-
-            validarEncabezado(
-                    metadata
-            );
-
-
-        } catch (SQLException ex) {
-
-            throw new IllegalStateException(
-                    "SQL Server no pudo crear o verificar el respaldo.",
-                    ex
-            );
-        }
-
-
-        registrar(
-                usuarioId,
-                nombre,
-                metadata
-        );
-
-
-        auditoriaAcceso.registrar(
-                usuarioId,
-                "BACKUP",
-                direccionIp,
-                agenteUsuario
-        );
-
-
-        return new RespaldoArchivo(
-                nombre,
-                metadata.fechaFinalizacion(),
-                metadata.bytes()
-        );
+    public RespaldoArchivo crear(Integer usuarioId,String ip,String agente) {
+        String nombre="reservasScouts_"+LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))+"_"+UUID.randomUUID()+".bak";
+        return ejecutar(nombre,false,usuarioId,ip,agente);
     }
-
-
-    // =====================================================
-    // RESTAURAR RESPALDO
-    // =====================================================
-
-    public void restaurar(
-            String nombreArchivo,
-            String confirmacion,
-            Integer usuarioId,
-            String direccionIp,
-            String agenteUsuario
-    ) {
-
-        /*
-         * Se exige una confirmación exacta
-         * antes de permitir la restauración.
-         */
-        if (
-                !RESTORE_CONFIRMATION.equals(
-                        confirmacion
-                )
-        ) {
-
-            throw new IllegalArgumentException(
-                    "La confirmación debe ser exactamente: "
-                            + RESTORE_CONFIRMATION
-            );
-        }
-
-
-        Path respaldo =
-                backupDirectory
-                        .resolve(
-                                nombreArchivo
-                        )
-                        .normalize();
-
-
-        validarRutaDestino(
-                respaldo,
-                nombreArchivo
-        );
-
-
-        /*
-         * Solo se puede restaurar un respaldo
-         * creado y registrado por la aplicación.
-         */
-        if (
-                listar()
-                        .stream()
-                        .noneMatch(
-                                item ->
-                                        item.nombre()
-                                                .equals(
-                                                        nombreArchivo
-                                                )
-                        )
-        ) {
-
-            throw new IllegalArgumentException(
-                    "El respaldo no está registrado como una copia creada por la aplicación."
-            );
-        }
-
-
-        String rutaSql =
-                escaparLiteral(
-                        respaldo.toString()
-                );
-
-
-        BackupMetadata metadata;
-
-
-        try (
-                Connection connection =
-                        conectar(
-                                "master"
-                        );
-
-                Statement statement =
-                        connection
-                                .createStatement()
-        ) {
-
-            /*
-             * Antes de restaurar se revisan
-             * los metadatos del archivo.
-             */
-            metadata =
-                    leerEncabezado(
-                            statement,
-                            rutaSql
-                    );
-
-
-            validarEncabezado(
-                    metadata
-            );
-
-
-            /*
-             * La aplicación ya no ejecuta
-             * RESTORE DATABASE directamente.
-             *
-             * Ahora llama al procedimiento
-             * almacenado creado en master.
-             */
-            statement.execute(
-
-                    "EXEC dbo.paRestaurarReservasScouts "
-                            + "@pRuta = N'"
-                            + rutaSql
-                            + "'"
-            );
-
-
-        } catch (SQLException ex) {
-
-            throw new IllegalStateException(
-                    "SQL Server no pudo restaurar el respaldo seleccionado.",
-                    ex
-            );
-        }
-
-
-        /*
-         * Después de restaurar se registra
-         * nuevamente el respaldo en el historial.
-         */
-        registrar(
-                usuarioId,
-                nombreArchivo,
-                metadata
-        );
-
-
-        auditoriaAcceso.registrar(
-                usuarioId,
-                "RESTORE",
-                direccionIp,
-                agenteUsuario
-        );
+    public void restaurar(String nombre,Integer usuarioId,String ip,String agente) {
+        ejecutar(nombre,true,usuarioId,ip,agente);
     }
-
-
-    // =====================================================
-    // LEER METADATOS DEL RESPALDO
-    // =====================================================
-
-    private BackupMetadata leerEncabezado(
-            Statement statement,
-            String rutaSql
-    ) throws SQLException {
-
-        try (
-                ResultSet encabezado =
-                        statement.executeQuery(
-
-                                "RESTORE HEADERONLY "
-                                        + "FROM DISK = N'"
-                                        + rutaSql
-                                        + "'"
-                        )
-        ) {
-
-            if (
-                    !encabezado.next()
-            ) {
-
-                throw new IllegalArgumentException(
-                        "El archivo no contiene metadatos de respaldo."
-                );
+    private RespaldoArchivo ejecutar(String nombre,boolean restaurar,Integer usuarioId,String ip,String agente) {
+        Path path=validarRuta(nombre);
+        UUID operacion=UUID.randomUUID();
+        try(Connection c=conectar()) {
+            iniciar(c,operacion,restaurar?"RESTORE":"BACKUP",nombre,usuarioId,ip,agente);
+            try {
+                if(restaurar && listar().stream().noneMatch(r->r.nombre().equals(nombre)))
+                    throw new IllegalArgumentException("El respaldo seleccionado no pertenece al catalogo de la aplicacion.");
+                Metadata meta;
+                try(Statement s=c.createStatement()) {
+                    s.setQueryTimeout(600);
+                    String ruta=path.toString().replace("'","''");
+                    if(restaurar) {
+                        meta=encabezado(s,ruta);
+                        vaciarConexiones();
+                        try { restaurarCopia(s,ruta); }
+                        finally { vaciarConexiones(); }
+                    } else {
+                        ejecutarSQL(s,"EXEC dbo.paRespaldoCompleto @pRuta=N'"+ruta+"'");
+                        meta=encabezado(s,ruta);
+                    }
+                }
+                try(PreparedStatement p=c.prepareStatement("EXEC dbo.paReservasRespaldoRegistrar ?,?,?")) {
+                    p.setString(1,nombre);p.setTimestamp(2,Timestamp.valueOf(meta.fecha));p.setLong(3,meta.bytes);p.execute();
+                }
+                finalizar(c,operacion,"COMPLETADO",null);
+                return new RespaldoArchivo(nombre,meta.fecha,meta.bytes);
+            } catch(Exception ex) {
+                try { finalizar(c,operacion,"ERROR",ex.getMessage()); } catch(SQLException logError) { ex.addSuppressed(logError); }
+                if(ex instanceof IllegalArgumentException validation) throw validation;
+                throw new IllegalStateException(restaurar?"SQL Server no pudo restaurar la copia seleccionada. La incidencia quedo registrada en auditoria.":"SQL Server no pudo crear o verificar el respaldo. La incidencia quedo registrada en auditoria.",ex);
             }
-
-
-            Timestamp finalizacion =
-                    encabezado.getTimestamp(
-                            "BackupFinishDate"
-                    );
-
-
-            if (
-                    finalizacion == null
-            ) {
-
-                throw new IllegalArgumentException(
-                        "El respaldo no tiene fecha de finalización válida."
-                );
-            }
-
-
-            return new BackupMetadata(
-
-                    encabezado.getString(
-                            "DatabaseName"
-                    ),
-
-                    encabezado.getInt(
-                            "BackupType"
-                    ),
-
-                    finalizacion
-                            .toLocalDateTime(),
-
-                    encabezado.getLong(
-                            "BackupSize"
-                    )
-            );
+        } catch(SQLException ex) { throw new IllegalStateException("No se pudo conectar con el servicio de mantenimiento de SQL Server.",ex); }
+    }
+    Path validarRuta(String nombre) {
+        if(nombre==null || !NAME.matcher(nombre).matches()) throw new IllegalArgumentException("Nombre de respaldo no permitido.");
+        Path path=directory.resolve(nombre).normalize();
+        if(!directory.equals(path.getParent())) throw new IllegalArgumentException("Ruta de respaldo no permitida.");
+        return path;
+    }
+    void restaurarCopia(Statement statement,String ruta) throws SQLException {
+        ejecutarSQL(statement,"EXEC dbo.paRestaurarReservasScouts @pRuta=N'"+ruta+"'");
+    }
+    static void ejecutarSQL(Statement statement,String sql) throws SQLException {
+        boolean resultado=statement.execute(sql);
+        while(true) {
+            if(resultado) { try(ResultSet rs=statement.getResultSet()) { while(rs.next()) { /* Consumir el resultado completo. */ } } }
+            else if(statement.getUpdateCount()==-1) break;
+            resultado=statement.getMoreResults(Statement.CLOSE_CURRENT_RESULT);
         }
     }
-
-
-    // =====================================================
-    // VALIDAR RESPALDO
-    // =====================================================
-
-    private void validarEncabezado(
-            BackupMetadata metadata
-    ) {
-
-        if (
-                !"reservasScouts"
-                        .equalsIgnoreCase(
-                                metadata.baseDatos()
-                        )
-                        ||
-                        metadata.tipo() != 1
-                        ||
-                        metadata.bytes() < 0
-        ) {
-
-            throw new IllegalArgumentException(
-                    "El archivo no contiene un respaldo completo válido de reservasScouts."
-            );
+    private Metadata encabezado(Statement s,String ruta) throws SQLException {
+        try(ResultSet rs=s.executeQuery("RESTORE HEADERONLY FROM DISK=N'"+ruta+"'")) {
+            if(!rs.next() || !"reservasScouts".equalsIgnoreCase(rs.getString("DatabaseName")) || rs.getInt("BackupType")!=1
+                || rs.getLong("BackupSize")<=0 || rs.getTimestamp("BackupFinishDate")==null)
+                throw new IllegalArgumentException("El archivo debe contener una unica copia completa valida de reservasScouts.");
+            var metadata=new Metadata(rs.getTimestamp("BackupFinishDate").toLocalDateTime(),rs.getLong("BackupSize"));
+            if(rs.next()) throw new IllegalArgumentException("Selecciona una copia con un unico respaldo completo.");
+            return metadata;
         }
     }
-
-
-    // =====================================================
-    // REGISTRAR RESPALDO
-    // =====================================================
-
-    private void registrar(
-            Integer usuarioId,
-            String nombre,
-            BackupMetadata metadata
-    ) {
-
-        jdbcTemplate.update(
-
-                "EXEC dbo.paRespaldoRegistrar ?, ?, ?, ?",
-
-                nombre,
-
-                usuarioId,
-
-                Timestamp.valueOf(
-                        metadata.fechaFinalizacion()
-                ),
-
-                metadata.bytes()
-        );
-    }
-
-
-    // =====================================================
-    // CONEXIÓN DE MANTENIMIENTO
-    // =====================================================
-
-    private Connection conectar(
-            String baseDatos
-    ) throws SQLException {
-
-        String password =
-                System.getenv(
-                        "RESERVASSCOUTS_MAINTENANCE_PASSWORD"
-                );
-
-
-        if (
-                password == null
-                        ||
-                        password.isBlank()
-        ) {
-
-            throw new IllegalStateException(
-                    "Falta configurar RESERVASSCOUTS_MAINTENANCE_PASSWORD para las operaciones de respaldo."
-            );
+    private void iniciar(Connection c,UUID id,String evento,String archivo,Integer usuarioId,String ip,String agente) throws SQLException {
+        String usuario="Cuenta #"+usuarioId;
+        if(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
+            var session=attrs.getRequest().getSession(false);
+            if(session!=null && session.getAttribute("usuarioEmail") instanceof String email) usuario=email;
         }
-
-
-        return DriverManager.getConnection(
-
-                JDBC_PREFIX
-                        + baseDatos,
-
-                MAINTENANCE_USER,
-
-                password
-        );
-    }
-
-
-    // =====================================================
-    // VALIDAR NOMBRE Y RUTA
-    // =====================================================
-
-    private void validarRutaDestino(
-            Path ruta,
-            String nombreArchivo
-    ) {
-
-        if (
-                !BACKUP_NAME
-                        .matcher(
-                                nombreArchivo
-                        )
-                        .matches()
-                        ||
-                        !ruta
-                                .getParent()
-                                .equals(
-                                        backupDirectory
-                                )
-        ) {
-
-            throw new IllegalArgumentException(
-                    "Nombre de archivo de respaldo no permitido."
-            );
+        try(PreparedStatement p=c.prepareStatement("EXEC dbo.paReservasOperacionIniciar ?,?,?,?,?,?,?")) {
+            p.setString(1,id.toString());p.setString(2,evento);p.setString(3,archivo);p.setObject(4,usuarioId,Types.INTEGER);
+            p.setString(5,usuario);p.setString(6,ip);p.setString(7,agente==null?null:agente.substring(0,Math.min(500,agente.length())));p.execute();
         }
     }
-
-
-    // =====================================================
-    // ESCAPAR RUTA PARA SQL SERVER
-    // =====================================================
-
-    private String escaparLiteral(
-            String valor
-    ) {
-
-        return valor.replace(
-                "'",
-                "''"
-        );
+    private void finalizar(Connection c,UUID id,String estado,String error) throws SQLException {
+        try(PreparedStatement p=c.prepareStatement("EXEC dbo.paReservasOperacionFinalizar ?,?,?")) {
+            p.setString(1,id.toString());p.setString(2,estado);p.setString(3,error==null?null:error.substring(0,Math.min(1000,error.length())));p.execute();
+        }
     }
-
-
-    // =====================================================
-    // METADATOS DEL RESPALDO
-    // =====================================================
-
-    private record BackupMetadata(
-
-            String baseDatos,
-
-            int tipo,
-
-            LocalDateTime fechaFinalizacion,
-
-            long bytes
-
-    ) {
+    private void vaciarConexiones() {
+        if(datasource instanceof HikariDataSource hikari && hikari.getHikariPoolMXBean()!=null) hikari.getHikariPoolMXBean().softEvictConnections();
     }
+    private record Metadata(LocalDateTime fecha,long bytes) {}
 }

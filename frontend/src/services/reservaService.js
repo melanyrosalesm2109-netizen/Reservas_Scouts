@@ -1,4 +1,5 @@
-﻿import { apiFetch as fetch } from "./api";
+import { apiFetch as fetch } from "./api";
+import { avisarCambioPagos } from "./notificacionService";
 
 const API_URL =
   `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080" : "")}/api/reservas`;
@@ -274,7 +275,7 @@ export async function eliminarReserva(
     );
 
 
-  return procesarRespuesta(
-    response
-  );
+  const datos = await procesarRespuesta(response);
+  avisarCambioPagos();
+  return datos;
 }

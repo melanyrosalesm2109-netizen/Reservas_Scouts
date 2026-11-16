@@ -47,7 +47,6 @@ public class RespaldoController {
     ) {
         respaldoService.restaurar(
                 requestBody.nombreArchivo(),
-                requestBody.confirmacion(),
                 (Integer) session.getAttribute("usuarioId"),
                 request.getRemoteAddr(),
                 request.getHeader("User-Agent")

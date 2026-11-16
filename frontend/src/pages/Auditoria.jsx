@@ -25,6 +25,7 @@ import {
 import { listarReservas } from "../services/reservaService";
 
 import "./Auditoria.css";
+import ReservaArchivada from "../components/ReservaArchivada";
 
 
 async function obtenerDatosAuditoria() {
@@ -270,6 +271,7 @@ function Auditoria() {
       usuarios: "Usuarios",
       espacios: "Espacios",
       perfilesUsuario: "Perfiles",
+      respaldos: "Respaldos",
       accesos: "Accesos",
       auditoriaAccesos: "Accesos",
     };
@@ -1657,6 +1659,7 @@ function Auditoria() {
             )}
 
 
+            {seleccionado.evento === "DELETE" && seleccionado.origen?.toLowerCase() === "reservas" && <ReservaArchivada key={seleccionado.registroId} id={seleccionado.registroId} />}
             {/* CAMBIOS DE DATOS */}
 
             {!esEventoAcceso &&

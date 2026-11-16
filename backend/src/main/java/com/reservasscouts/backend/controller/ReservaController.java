@@ -225,6 +225,9 @@ public class ReservaController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirma la reserva con su metodo de pago.");
         }
 
+        if ("APROBADA".equals(request.estado())) {
+            throw new IllegalArgumentException("Crea la reserva pendiente y confirma el pago para aprobarla.");
+        }
         return service.insertar(
                 request.conCreador(
                         usuarioId

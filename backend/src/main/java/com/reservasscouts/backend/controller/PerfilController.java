@@ -98,7 +98,7 @@ public class PerfilController {
                 usuarioId
         );
         if (!soloRegistrados) return perfiles;
-        var clientes = jdbcTemplate.queryForList("EXEC dbo.paUsuariosRegistradosIds", Integer.class);
+        var clientes = service.usuariosRegistrados();
         return perfiles.stream().filter(p -> p.usuarioId() != null && clientes.contains(p.usuarioId())).toList();
     }
 

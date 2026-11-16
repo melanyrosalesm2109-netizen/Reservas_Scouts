@@ -6,16 +6,15 @@ import {
   restaurarRespaldo
 } from "../services/respaldoService";
 import "./Respaldos.css";
+import ResultadoOperacion from "../components/ResultadoOperacion";
 
-const CONFIRMACION_RESTAURAR = "RESTAURAR reservasScouts";
 
 function Respaldos() {
   const [respaldos, setRespaldos] = useState([]);
   const [seleccionado, setSeleccionado] = useState("");
-  const [confirmacion, setConfirmacion] = useState("");
   const [cargando, setCargando] = useState(true);
   const [operando, setOperando] = useState(false);
-  const [mensaje, setMensaje] = useState("");
+  const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
 
   const cargarRespaldos = async () => {
@@ -61,41 +60,38 @@ function Respaldos() {
   }, []);
 
   const handleCrear = async () => {
+    if (operando) return;
     setOperando(true);
-    setMensaje("");
+    setResultado(null);
     setError("");
     try {
       const nuevo = await crearRespaldo();
-      setMensaje(`Respaldo creado y verificado: ${nuevo.nombre}`);
-      const actualizados = await listarRespaldos();
-      setRespaldos(actualizados);
+      setResultado({ tipo: "exito", titulo: "Respaldo creado", mensaje: "La copia de seguridad se creó y se verificó correctamente." });
+      try { setRespaldos(await listarRespaldos()); }
+      catch { setError("La copia se creó correctamente, pero no se pudo actualizar la lista. Pulsa Actualizar."); }
       setSeleccionado(nuevo.nombre);
     } catch (err) {
-      setError(err.message || "No se pudo crear el respaldo.");
+      setResultado({ tipo: "error", titulo: "No se pudo crear el respaldo", mensaje: err.message || "Intenta crear la copia nuevamente." });
     } finally {
       setOperando(false);
     }
   };
 
   const handleRestaurar = async () => {
-    if (!seleccionado || confirmacion !== CONFIRMACION_RESTAURAR) {
-      return;
-    }
-    if (!window.confirm(`Se reemplazarán los datos actuales de reservasScouts con "${seleccionado}". ¿Continuar?`)) {
+    if (!seleccionado || operando) {
       return;
     }
 
     setOperando(true);
-    setMensaje("");
+    setResultado(null);
     setError("");
     try {
-      const resultado = await restaurarRespaldo(seleccionado, confirmacion);
-      setMensaje(resultado.mensaje);
-      setConfirmacion("");
-      const actualizados = await listarRespaldos();
-      setRespaldos(actualizados);
+      const resultado = await restaurarRespaldo(seleccionado);
+      setResultado({ tipo: "exito", titulo: "Base de datos restaurada", mensaje: resultado.mensaje || "La versión seleccionada se recuperó correctamente." });
+      try { setRespaldos(await listarRespaldos()); }
+      catch { setError("La restauración terminó correctamente, pero no se pudo actualizar la lista. Pulsa Actualizar."); }
     } catch (err) {
-      setError(err.message || "No se pudo restaurar el respaldo.");
+      setResultado({ tipo: "error", titulo: "No se pudo completar la restauración", mensaje: err.message || "No se confirmó la restauración. Revisa la auditoría antes de volver a intentarlo." });
     } finally {
       setOperando(false);
     }
@@ -103,6 +99,7 @@ function Respaldos() {
 
   return (
     <section className="backup-page">
+      {resultado && <ResultadoOperacion resultado={resultado} onCerrar={() => setResultado(null)} />}
       <header className="backup-heading">
         <div>
           <span>ADMINISTRACIÓN</span>
@@ -116,10 +113,9 @@ function Respaldos() {
 
       <div className="backup-warning" role="note">
         <AlertTriangle size={19} />
-        <p>La restauración reemplaza la base actual. Verifica el archivo y confirma el texto solicitado antes de continuar.</p>
+        <p>La restauración reemplaza la base actual. Selecciona la versión que deseas recuperar antes de restaurar.</p>
       </div>
 
-      {mensaje && <p className="backup-success" role="status">{mensaje}</p>}
       {error && <p className="backup-error" role="alert">{error}</p>}
 
       <section className="backup-card">
@@ -131,7 +127,7 @@ function Respaldos() {
         ) : (
           <label>
             Selecciona un respaldo
-            <select value={seleccionado} onChange={(event) => setSeleccionado(event.target.value)}>
+            <select disabled={operando} value={seleccionado} onChange={(event) => setSeleccionado(event.target.value)}>
               {respaldos.map((respaldo) => (
                 <option key={respaldo.nombre} value={respaldo.nombre}>
                   {respaldo.nombre} — {new Date(respaldo.creadoEn).toLocaleString("es-CR")}
@@ -145,22 +141,13 @@ function Respaldos() {
           Crear y verificar respaldo
         </button>
 
-        <label>
-          Para restaurar, escribe exactamente <code>{CONFIRMACION_RESTAURAR}</code>
-          <input
-            value={confirmacion}
-            onChange={(event) => setConfirmacion(event.target.value)}
-            autoComplete="off"
-            spellCheck="false"
-          />
-        </label>
         <button
           className="backup-restore-button"
           type="button"
           onClick={() => void handleRestaurar()}
-          disabled={operando || !seleccionado || confirmacion !== CONFIRMACION_RESTAURAR}
+          disabled={operando || cargando || !seleccionado}
         >
-          Restaurar base de datos
+          {operando ? "Procesando…" : "Restaurar base de datos"}
         </button>
       </section>
     </section>

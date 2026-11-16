@@ -1,16 +1,47 @@
-# React + Vite
+# Frontend · Reservas Scouts
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz React con Vite. Incluye acceso público, perfiles, reservas, calendario,
+pagos, auditoría y respaldos, con navegación según el rol de la sesión.
 
-Currently, two official plugins are available:
+## Ejecutar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Desde esta carpeta:
 
-## React Compiler
+```powershell
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite usa `http://localhost:5173`. El backend local se consulta en
+`http://localhost:8080`. Para otro servidor, definir `VITE_API_URL` siguiendo
+[.env.example](.env.example). Esta variable es pública: no contiene contraseñas.
 
-## Expanding the ESLint configuration
+## Estructura
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Carpeta | Contenido |
+| --- | --- |
+| `src/pages/` | Pantallas y estilos propios de cada módulo. |
+| `src/components/` | Componentes compartidos y flujos de pago. |
+| `src/layouts/` | Cabecera y navegación de la aplicación. |
+| `src/context/` | Sesión y sincronización de notificaciones. |
+| `src/services/` | Llamadas al backend; `api.js` incluye la cookie de sesión. |
+| `src/styles/` | Adaptación compartida a distintos tamaños de pantalla. |
+| `public/` | Favicon y recursos públicos utilizados por la interfaz. |
+| `e2e/` | Pruebas de navegador y sus instrucciones. |
+
+`src/index.css` define estilos base y variables. Cada pantalla conserva su CSS
+específico; `Responsive.css` aplica los ajustes compartidos.
+
+## Verificar
+
+```powershell
+npm run lint
+npm run build
+```
+
+La compilación genera `dist/`. No se versionan `node_modules/`, `dist/`,
+resultados de Playwright ni capturas temporales. Para pruebas de navegador,
+consultar [e2e/README.md](e2e/README.md).
+
+Las instrucciones de instalación y base de datos están en el
+[README principal](../README.md).

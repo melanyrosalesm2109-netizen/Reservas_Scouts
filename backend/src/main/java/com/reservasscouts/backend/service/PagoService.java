@@ -79,7 +79,10 @@ public class PagoService {
             PagoRequest request
     ) {
 
+        repository.bloquearEdicion(id);
         var actual = repository.buscarPorId(id);
+        if (actual != null && !"PENDIENTE".equals(actual.estado()))
+            throw new IllegalArgumentException("Un pago aprobado no se puede editar. Usa la anulacion con motivo para conservar el historial.");
         if (actual != null && ("Comprobante adjunto".equals(actual.comprobante())
                 || "Pago en efectivo al llegar.".equals(actual.notas())
                 || "Pago simulado aprobado. Sin cobro real.".equals(actual.notas()))
@@ -101,6 +104,10 @@ public class PagoService {
             Integer id
     ) {
 
+        repository.bloquearEdicion(id);
+        var actual = repository.buscarPorId(id);
+        if (actual != null && !"PENDIENTE".equals(actual.estado()))
+            throw new IllegalArgumentException("Los pagos aprobados o anulados no se eliminan. Conserva el historial y usa la anulacion con motivo.");
         auditoriaContexto.ejecutar(
                 () ->
                         repository.eliminar(id)

@@ -51,12 +51,12 @@ test("a reviewed payment disappears from both staff inboxes", async ({ browser }
   } finally { await contextoAdmin.close(); await contextoRecepcion.close(); }
 });
 
-test("future cash cannot be marked received and rejection requires a reason", async ({ page }) => {
+test("staff can register future cash and rejection requires a reason", async ({ page }) => {
   const estado = { filas: [{ ...pendiente }, { ...pendiente, reservaId: 30, codigo: "EFECTIVO-DEMO", pagoId: 24, metodo: "Efectivo", reservaEstado: "APROBADA", fechaInicio: "2099-12-01T08:00:00", fechaFin: "2099-12-01T17:00:00", tieneComprobante: false }] };
   await conectar(page, "Recepcionista", estado);
   await page.goto("/notificaciones");
-  await page.getByRole("tab", { name: /Efectivo al llegar/ }).click();
-  await expect(page.getByRole("button", { name: "Registrar efectivo recibido" })).toBeDisabled();
+  await page.getByRole("tab", { name: /Efectivo por cobrar/ }).click();
+  await expect(page.getByRole("button", { name: "Registrar efectivo recibido" })).toBeEnabled();
   await page.getByRole("tab", { name: /Pagos por revisar/ }).click();
   await page.getByRole("button", { name: "Rechazar", exact: true }).click();
   await expect(page.getByRole("button", { name: "Confirmar rechazo" })).toBeDisabled();
@@ -65,7 +65,7 @@ test("future cash cannot be marked received and rejection requires a reason", as
   await expect(page.getByRole("article")).toHaveCount(0);
   expect(estado.revision).toEqual({ aprobar: false, motivo: "El monto del comprobante no corresponde." });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("tab", { name: /Efectivo al llegar/ }).click();
+  await page.getByRole("tab", { name: /Efectivo por cobrar/ }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/notificaciones-mobile.png", fullPage: true });
 });

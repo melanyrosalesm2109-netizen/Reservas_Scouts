@@ -1,0 +1,46 @@
+.pagos-stats-gestion { grid-template-columns: repeat(5,minmax(0,1fr)); }
+.pagos-stats-gestion .pago-stat { min-width: 0; padding: 19px 14px; }
+.pagos-stats-gestion .pago-stat span { font-size: 11px; }
+.pagos-stats-gestion .pago-stat strong { font-size: 21px; }
+.pagos-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+.pagos-tabs button { padding: 10px 14px; border: 1px solid #d9d4ca; border-radius: 9px; background: white; color: #12384b; cursor: pointer; }
+.pagos-tabs [aria-selected=true] { background: #17475e; color: white; }
+.pagos-tabs span { margin-left: 6px; font-weight: 700; }
+.pago-filtro-fecha { min-width: 130px; font-size: 11px; color: #61788b; }
+.pagos-filtros .pago-filtro-fecha input { width: 100%; box-sizing: border-box; margin-top: 4px; min-height: 44px; padding: 10px 12px; border: 1px solid #d9d4ca; border-radius: 8px; background: #fbfaf8; color: #12384b; font-size: 13px; }
+.pagos-header a { color: #17475e; font-weight: 600; }
+.pagos-page .pagos-table { min-width: 900px; }
+.pagos-page .pagos-table td:first-child { min-width: 150px; }
+.pago-scroll-ayuda { display: none; }
+.pago-espacio-texto,.pago-fecha-concepto { display: block; font-size: 11px; color: #61788b; line-height: 1.6; margin-top: 4px; }
+.pago-actions-gestion { display: flex; flex-wrap: wrap; gap: 8px; }
+.pago-actions-gestion button,.pago-gestion-dialog button,.comprobante-revision button { padding: 9px 12px; border: 1px solid #d9d4ca; background: white; color: #12384b; border-radius: 8px; cursor: pointer; font-size: 12px; min-height: 36px; }
+button.pago-principal { color: white; background: #17475e; border-color: #17475e; }
+.pago-actions-gestion button:disabled,.pago-gestion-dialog button:disabled { opacity: .5; cursor: not-allowed; }
+.pago-status.anulado { color: #684b8b; background: #efe9f5; }
+.pago-gestion-dialog { width: min(730px,calc(100vw - 28px)); max-width: none; padding: 0; border: 1px solid #d9d4ca; border-radius: 15px; background: #faf9f6; color: #12384b; max-height: calc(100dvh - 30px); }
+.pago-gestion-dialog[open] { display: flex; flex-direction: column; }
+.pago-gestion-dialog::backdrop { background: #071b29bd; backdrop-filter: blur(3px); }
+.pago-gestion-dialog header { padding: 20px; display: flex; justify-content: space-between; gap: 15px; background: #12384b; color: white; }
+.pago-gestion-dialog h2 { font-family: Georgia,serif; margin: 0; }
+.pago-gestion-dialog header p { margin: 8px 0 0; font-size: 12px; }
+.pago-gestion-dialog > form,.pago-detalle-cuerpo { padding: 22px; overflow: auto; }
+.pago-gestion-dialog fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.pago-gestion-dialog label { display: block; font-size: 13px; font-weight: 700; }
+.pago-gestion-dialog input,.pago-gestion-dialog select,.pago-gestion-dialog textarea { width: 100%; box-sizing: border-box; padding: 11px; border: 1px solid #d9d4ca; border-radius: 8px; background: white; margin: 7px 0 16px; }
+.pago-gestion-dialog footer { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 20px; }
+.pago-gestion-dialog p,.pago-ayuda { font-size: 13px; line-height: 1.6; }
+.pago-ayuda { color: #61788b; }
+.pago-detalle-cuerpo dl { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pago-detalle-cuerpo dt { font-size: 11px; color: #61788b; }
+.pago-detalle-cuerpo dd { margin: 6px 0 0; font-size: 14px; font-weight: 700; }
+.pago-anulacion { padding-top: 18px; border-top: 1px solid #d9d4ca; margin-top: 20px; }
+.pago-aviso { padding: 14px; border-radius: 8px; background: #efe9f5; font-size: 13px; }
+.comprobante-revision { border-top: 1px solid #d9d4ca; padding: 14px 20px; overflow: auto; }
+.comprobante-revision p,.comprobante-revision label { font-size: 12px; }
+.comprobante-revision textarea { display: block; width: 100%; box-sizing: border-box; min-height: 65px; border: 1px solid #d9d4ca; border-radius: 8px; margin: 8px 0; padding: 9px; }
+.comprobante-revision button { margin-right: 8px; }
+@media(max-width:1100px) { .pagos-stats-gestion { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:600px) { .pagos-stats-gestion { grid-template-columns: repeat(2,minmax(0,1fr)); } .pagos-stats-gestion .pago-stat:last-child { grid-column: 1 / -1; } .pago-detalle-cuerpo dl { grid-template-columns: 1fr; } .pago-scroll-ayuda { display: block; padding: 0 20px; font-size: 11px; color: #61788b; } }
+
+.pago-status.vencido { color: #65727a; background: #edf0f1; }

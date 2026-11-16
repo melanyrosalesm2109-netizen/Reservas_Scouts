@@ -72,7 +72,7 @@ public class PagoController {
             @RequestBody PagoRequest request
     ) {
 
-        return service.insertar(request);
+        throw new IllegalArgumentException("Usa Registrar cobro para comprobar el saldo y evitar pagos duplicados.");
     }
 
     @PutMapping("/{id}")

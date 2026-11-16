@@ -1,7 +1,7 @@
 param([string]$Servidor = 'localhost')
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Data
-$raiz=Split-Path $PSScriptRoot -Parent
+$raiz=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $archivos=@(
     @{ Codigo='DEMO-FLUJO-002'; Archivo='output\comprobantes-demo\sinpe-ia-demo.png'; Tipo='image/png'; Monto=25000 },
     @{ Codigo='DEMO-FLUJO-003'; Archivo='output\comprobantes-demo\transferencia-ia-demo.png'; Tipo='image/png'; Monto=15000 },

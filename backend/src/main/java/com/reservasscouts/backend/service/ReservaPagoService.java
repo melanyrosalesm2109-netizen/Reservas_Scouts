@@ -68,7 +68,7 @@ public class ReservaPagoService {
         jdbc.update("EXEC dbo.paBloqueoValidar ?,?,?,?,?",datos.bloqueo().toString(),usuario,r.espacioId(),
                 Timestamp.valueOf(r.fechaInicio()),Timestamp.valueOf(r.fechaFin()));
         var espacio=espacios.buscarPorId(r.espacioId());
-        String estado=transferencia?"PENDIENTE":"APROBADA";
+        String estado=tarjeta?"APROBADA":"PENDIENTE";
         var segura=new ReservaRequest(r.codigo(),r.espacioId(),r.solicitantePerfilId(),usuario,r.grupo(),r.responsable(),
                 r.telefono(),r.email(),r.participantes(),r.tipoActividad(),r.fechaInicio(),r.fechaFin(),estado,r.observaciones());
         var reserva=reservas.insertar(segura);
@@ -78,7 +78,9 @@ public class ReservaPagoService {
                 metodo.equals("Efectivo")?r.fechaInicio().toLocalDate():hoy,tarjeta?"PAGADO":"PENDIENTE",
                 transferencia?"Comprobante adjunto":null,notas));
         if (archivo!=null) {
-            jdbc.update("EXEC dbo.paComprobanteGuardar ?,?,?,?",pago.id(),"comprobante."+(tipo.equals("application/pdf")?"pdf":tipo.equals("image/png")?"png":"jpg"),tipo,archivo);
+            byte[] contenido=archivo;
+            String mediaTipo=tipo;
+            auditoria.ejecutar(()-> { jdbc.update("EXEC dbo.paComprobanteGuardar ?,?,?,?",pago.id(),"comprobante."+(mediaTipo.equals("application/pdf")?"pdf":mediaTipo.equals("image/png")?"png":"jpg"),mediaTipo,contenido); });
         }
         liberar(datos.bloqueo(),usuario);
         return reserva;
@@ -103,6 +105,16 @@ public class ReservaPagoService {
         auditoria.ejecutar(()-> { jdbc.update("EXEC dbo.paPagoVerificar ?,?,?,?",pago,aprobar,usuario,motivo); });
     }
     public record Archivo(String nombre,String tipo,byte[] contenido) {}
+    @Transactional(rollbackFor=Exception.class)
+    public void adjuntarComprobante(int pago, MultipartFile archivo) throws Exception {
+        if (archivo == null || archivo.isEmpty() || archivo.getSize() > 5 * 1024 * 1024)
+            throw new IllegalArgumentException("Adjunta un comprobante PDF, PNG o JPG de hasta 5 MB.");
+        byte[] contenido = archivo.getBytes();
+        String tipo = tipoArchivo(contenido);
+        String extension = tipo.equals("application/pdf") ? "pdf" : tipo.equals("image/png") ? "png" : "jpg";
+        auditoria.ejecutar(() -> { jdbc.update("EXEC dbo.paComprobanteAdjuntar ?,?,?,?", pago,
+                "comprobante-pago-" + pago + "." + extension, tipo, contenido); });
+    }
     public Archivo comprobante(int pago) {
         var lista=jdbc.query("EXEC dbo.paComprobanteLeer ?",(rs,n)->new Archivo(rs.getString("nombre"),rs.getString("tipo"),rs.getBytes("contenido")),pago);
         if(lista.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Este pago no tiene comprobante adjunto.");

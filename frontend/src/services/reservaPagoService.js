@@ -9,6 +9,9 @@ async function respuesta(res) {
 export async function bloquearHorario(datos) {
   return respuesta(await apiFetch(`${raiz}/reservas/bloqueos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }));
 }
+export async function consultarPoliticaPago() {
+  return respuesta(await apiFetch(`${raiz}/reservas/politica-pago`));
+}
 export async function liberarHorario(token) {
   await apiFetch(`${raiz}/reservas/bloqueos/${token}`, { method: "DELETE", keepalive: true });
 }
@@ -32,6 +35,17 @@ export async function obtenerComprobante(id) {
   const blob = await res.blob();
   const nombre = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
   return { url: URL.createObjectURL(blob), tipo: blob.type, nombre: nombre?.[1] || "comprobante" };
+}
+export async function adjuntarComprobante(id, archivo) {
+  const body = new FormData();
+  body.append("comprobante", archivo);
+  const datos = await respuesta(await apiFetch(`${raiz}/pagos/${id}/comprobante`, { method: "POST", body }));
+  avisarCambioPagos();
+  return datos;
+}
+export async function obtenerReservaArchivada(id) {
+  const datos = await respuesta(await apiFetch(`${raiz}/reservas/${id}/archivo`));
+  return { ...datos, reserva: JSON.parse(datos.reservaJson), pagos: JSON.parse(datos.pagosJson) };
 }
 export async function descargarComprobante(id) {
   const archivo = await obtenerComprobante(id);

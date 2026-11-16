@@ -14,7 +14,7 @@ public class NotificacionController {
     public record Notificacion(int reservaId,int espacioId,String codigo,String solicitante,String espacio,String responsable,
             int participantes,LocalDateTime fechaInicio,LocalDateTime fechaFin,String reservaEstado,
             LocalDateTime reservaCreadaEn,Integer pagoId,BigDecimal monto,String metodo,String pagoEstado,
-            LocalDate fechaPago,boolean tieneComprobante,Instant revisadaEn,String motivo,String revisadoPor) {}
+            LocalDate fechaPago,boolean tieneComprobante,Instant revisadaEn,String motivo,String revisadoPor,LocalDateTime pagoVenceEn) {}
     @GetMapping
     public List<Notificacion> listar() {
         return jdbc.query("EXEC dbo.paNotificacionesListar",(rs,n)->new Notificacion(
@@ -25,6 +25,6 @@ public class NotificacionController {
                 rs.getBigDecimal("monto"),rs.getString("metodo"),rs.getString("pagoEstado"),
                 rs.getDate("fechaPago")==null?null:rs.getDate("fechaPago").toLocalDate(),rs.getBoolean("tieneComprobante"),
                 rs.getTimestamp("revisadaEn")==null?null:rs.getTimestamp("revisadaEn").toLocalDateTime().toInstant(ZoneOffset.UTC),
-                rs.getString("motivo"),rs.getString("revisadoPor")));
+                rs.getString("motivo"),rs.getString("revisadoPor"),rs.getTimestamp("pagoVenceEn")==null?null:rs.getTimestamp("pagoVenceEn").toLocalDateTime()));
     }
 }
