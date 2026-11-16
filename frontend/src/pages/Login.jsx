@@ -24,6 +24,7 @@ import {
 } from "../context/useAuth";
 
 import "./Login.css";
+import LoginPresentation from "../components/LoginPresentation";
 
 
 const registroVacio = {
@@ -343,7 +344,7 @@ function Login() {
 
   return (
 
-    <div className="login-page">
+    <LoginPresentation>
 
       <div
         className={
@@ -363,13 +364,13 @@ function Login() {
           </span>
 
 
-          <h1>
+          <h2>
 
             {modoRegistro
               ? "Crear cuenta"
               : "Bienvenido"}
 
-          </h1>
+          </h2>
 
 
           <p>
@@ -409,13 +410,14 @@ function Login() {
             onSubmit={handleSubmit}
             className="login-form"
           >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
 
             <div className="login-field">
 
               <label>
-                Usuario o correo
-              </label>
+                Usuario o correo <span className="required-mark" aria-hidden="true">*</span>
+</label>
 
 
               <div className="login-input">
@@ -432,7 +434,7 @@ function Login() {
                         event.target.value
                       )
                   }
-                  placeholder="Ingrese su usuario o correo"
+                  required placeholder="Ingrese su usuario o correo"
                 />
 
               </div>
@@ -443,8 +445,8 @@ function Login() {
             <div className="login-field">
 
               <label>
-                Contraseña
-              </label>
+                Contraseña <span className="required-mark" aria-hidden="true">*</span>
+</label>
 
 
               <div className="login-input">
@@ -463,7 +465,7 @@ function Login() {
                         event.target.value
                       )
                   }
-                  placeholder="Ingrese su contraseña"
+                  required placeholder="Ingrese su contraseña"
                 />
 
               </div>
@@ -513,6 +515,7 @@ function Login() {
             onSubmit={handleRegistro}
             className="login-form"
           >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
 
             <div className="register-grid">
@@ -521,7 +524,7 @@ function Login() {
               <div className="login-field register-full">
 
                 <label>
-                  Nombre completo *
+                  Nombre completo <span className="required-mark" aria-hidden="true">*</span>
                 </label>
 
 
@@ -615,7 +618,7 @@ function Login() {
               <div className="login-field register-full">
 
                 <label>
-                  Correo electrónico *
+                  Correo electrónico <span className="required-mark" aria-hidden="true">*</span>
                 </label>
 
 
@@ -679,7 +682,7 @@ function Login() {
               <div className="login-field">
 
                 <label>
-                  Contraseña *
+                  Contraseña <span className="required-mark" aria-hidden="true">*</span>
                 </label>
 
 
@@ -712,7 +715,7 @@ function Login() {
               <div className="login-field">
 
                 <label>
-                  Confirmar contraseña *
+                  Confirmar contraseña <span className="required-mark" aria-hidden="true">*</span>
                 </label>
 
 
@@ -777,7 +780,7 @@ function Login() {
 
       </div>
 
-    </div>
+    </LoginPresentation>
   );
 }
 

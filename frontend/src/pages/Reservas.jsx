@@ -72,7 +72,7 @@ import { useAuth } from "../context/useAuth";
 
 
 import "./Reservas.css";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CalendarioDisponibilidad from "../components/CalendarioDisponibilidad";
 import PagoReserva from "../components/PagoReserva";
 import { confirmarReserva } from "../services/reservaPagoService";
@@ -156,6 +156,7 @@ function perfilDelUsuario(perfiles, usuario, esUsuarioFinal) {
 
 function Reservas() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const espacioEnlace = searchParams.get("espacioId") || "";
   const codigoEnlace = searchParams.get("codigo") || "";
   const nuevaEnlace = searchParams.get("nueva") === "1";
@@ -789,7 +790,25 @@ function Reservas() {
 
 
 
-  const cerrarModal = () => {
+  useEffect(() => {
+    if (modalAbierto) return;
+    let vigente = true;
+    const refrescar = async () => {
+      try {
+        const datos = await listarReservas(filtros);
+        if (vigente) {
+          setReservas(datos);
+          if (!filtros.estado && !filtros.responsable && !filtros.fechaDesde && !filtros.fechaHasta && !filtros.solicitantePerfilId) setTodasReservas(datos);
+        }
+      } catch { /* Keep the existing list if a background request fails. */ }
+    };
+    const timer = window.setInterval(refrescar, 10000);
+    window.addEventListener("focus", refrescar);
+    return () => { vigente = false; window.clearInterval(timer); window.removeEventListener("focus", refrescar); };
+  }, [modalAbierto, filtros]);
+
+  const cerrarModal = (volverAlCatalogo = true) => {
+    if (nuevaEnlace && volverAlCatalogo !== false) navigate("/espacios", { replace: true });
 
 
 
@@ -1385,7 +1404,7 @@ function Reservas() {
 
 
 
-        cerrarModal();
+        cerrarModal(false);
 
 
 
@@ -1405,17 +1424,15 @@ function Reservas() {
 
 
 
-        cerrarModal();
+        cerrarModal(false);
 
 
 
         setMensaje(
 
-          esUsuarioFinal
-
-            ? "Solicitud de reserva enviada correctamente."
-
-            : "Reserva creada correctamente."
+          pagoReserva.metodo === "Efectivo"
+            ? "Reserva realizada correctamente. El pago en efectivo queda pendiente para el día de llegada."
+            : "Reserva realizada correctamente. Puedes consultar su estado en Mis reservas."
 
         );
 
@@ -1717,8 +1734,7 @@ function Reservas() {
 
             <option value="APROBADA">
 
-              Aprobada
-
+              Reservada
             </option>
 
 
@@ -2257,7 +2273,7 @@ function Reservas() {
 
                       >
 
-                        {reserva.estado}
+                        {reserva.estado === "APROBADA" ? "Reservada" : reserva.estado}
 
                       </span>
 
@@ -2561,8 +2577,7 @@ function Reservas() {
 
           <span>
 
-            Aprobadas
-
+            Reservadas
           </span>
 
 
@@ -2708,6 +2723,7 @@ function Reservas() {
               }
 
             >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
 
 
@@ -2742,7 +2758,7 @@ function Reservas() {
 
                     <label>
 
-                      Código *
+                      Código <span className="required-mark" aria-hidden="true">*</span>
 
                     </label>
 
@@ -2792,7 +2808,7 @@ function Reservas() {
 
                     <label>
 
-                      Estado *
+                      Estado <span className="required-mark" aria-hidden="true">*</span>
 
                     </label>
 
@@ -2828,8 +2844,7 @@ function Reservas() {
 
                       <option value="APROBADA">
 
-                        Aprobada
-
+                        Reservada
                       </option>
 
 
@@ -2868,7 +2883,7 @@ function Reservas() {
 
                   <label>
 
-                    Espacio *
+                    Espacio <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -2950,7 +2965,7 @@ function Reservas() {
 
                   <label>
 
-                    Solicitante *
+                    Solicitante <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -2979,7 +2994,7 @@ function Reservas() {
 
                   <label>
 
-                    {perfilSeleccionado?.tipoPerfil === "Persona" || (esUsuarioFinal && !perfilSeleccionado) ? "Nombre completo *" : "Persona responsable de la actividad *"}
+                    {perfilSeleccionado?.tipoPerfil === "Persona" || (esUsuarioFinal && !perfilSeleccionado) ? "Nombre completo" : "Persona responsable de la actividad"} <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
 
@@ -3066,7 +3081,7 @@ function Reservas() {
 
                   <label>
 
-                    Teléfono *
+                    Teléfono <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -3110,7 +3125,7 @@ function Reservas() {
 
                   <label>
 
-                    Correo *
+                    Correo <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -3156,7 +3171,7 @@ function Reservas() {
 
                   <label>
 
-                    Participantes *
+                    Participantes <span className="required-mark" aria-hidden="true">*</span>
 
 
 
@@ -3238,7 +3253,7 @@ function Reservas() {
 
                   <label>
 
-                    Tipo de actividad *
+                    Tipo de actividad <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -3282,7 +3297,7 @@ function Reservas() {
 
                   <label>
 
-                    Fecha y hora inicio *
+                    Fecha y hora inicio <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 
@@ -3324,7 +3339,7 @@ function Reservas() {
 
                   <label>
 
-                    Fecha y hora final *
+                    Fecha y hora final <span className="required-mark" aria-hidden="true">*</span>
 
                   </label>
 

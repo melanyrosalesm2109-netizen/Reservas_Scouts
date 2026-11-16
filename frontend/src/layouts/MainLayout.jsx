@@ -1,3 +1,4 @@
+import ResponsiveTables from "../components/ResponsiveTables";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -13,6 +14,7 @@ import { esPendiente } from "../services/notificacionService";
 const secciones = [
   { ruta: "/notificaciones", nombre: "Notificaciones", icono: Bell, roles: ["Administrador", "Recepcionista"] },
   { ruta: "/dashboard", nombre: "Dashboard", icono: LayoutDashboard, roles: ["Administrador"] },
+  { ruta: "/mi-perfil", nombre: "Mi perfil", icono: UsersRound, roles: ["Usuario", "Miembro"] },
   { ruta: "/reservas", nombre: "Reservas", icono: CalendarDays },
   { ruta: "/espacios", nombre: "Espacios", icono: Building2 },
   { ruta: "/perfiles", nombre: "Perfiles", icono: UsersRound, roles: ["Administrador", "Recepcionista"] },
@@ -118,7 +120,7 @@ function MainLayout() {
         </div>
         {errorCerrarSesion && <p className="topbar-error" role="alert">{errorCerrarSesion}</p>}
       </header>
-      <main className="main-content"><Outlet context={{ bandeja }} /></main>
+      <main className="main-content"><ResponsiveTables pathname={pathname} /><Outlet context={{ bandeja }} /></main>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   Navigate
 } from "react-router-dom";
 
+import MiPerfil from "./pages/MiPerfil";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Reservas from "./pages/Reservas";
@@ -19,6 +20,8 @@ import Respaldos from "./pages/Respaldos";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthProvider";
+
+import "./styles/Responsive.css";
 
 function App() {
 
@@ -60,6 +63,7 @@ function App() {
           }
         >
 
+          <Route path="/mi-perfil" element={<MiPerfil />} />
           <Route path="/notificaciones" element={<ProtectedRoute requiredRole={["Administrador", "Recepcionista"]}><Notificaciones /></ProtectedRoute>} />
 
           <Route

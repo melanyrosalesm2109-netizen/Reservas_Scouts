@@ -1,0 +1,14 @@
+.rechazo-pago-dialog { width: min(520px,calc(100vw - 32px)); margin: auto; max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid #e4ded5; border-radius: 15px; padding: 25px; color: #12364b; box-shadow: 0 24px 80px #102f4340; }
+.rechazo-pago-dialog::backdrop { background: #102f438a; backdrop-filter: blur(3px); }
+.rechazo-pago-dialog header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 20px; }
+.rechazo-pago-dialog header span { font-size: 10px; letter-spacing: 1.3px; color: #a77c3f; font-weight: 700; }
+.rechazo-pago-dialog h2 { font: 27px Georgia,serif; margin-top: 7px; }
+.rechazo-pago-dialog header button { padding: 7px; border: 0; border-radius: 8px; background: #f1f4f5; color: #12364b; cursor: pointer; }
+.rechazo-pago-dialog p { font-size: 13px; line-height: 1.7; color: #687980; margin-bottom: 16px; }
+.rechazo-pago-dialog label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.rechazo-pago-dialog textarea { width: 100%; padding: 12px; resize: vertical; border: 1px solid #dcd5ca; border-radius: 8px; color: #12364b; }
+.rechazo-pago-dialog footer { display: flex; justify-content: end; gap: 10px; margin-top: 20px; }
+.rechazo-pago-dialog footer button { padding: 11px 17px; border-radius: 8px; border: 1px solid #ddd5cb; background: #f7f4ef; color: #12364b; cursor: pointer; }
+.rechazo-pago-dialog footer .rechazo-confirmar { background: #a63737; border-color: #a63737; color: white; }
+.rechazo-pago-dialog :is(button,textarea):focus-visible { outline: 3px solid #c69c5b; outline-offset: 2px; }
+.rechazo-pago-dialog button:disabled { opacity: .6; cursor: wait; }

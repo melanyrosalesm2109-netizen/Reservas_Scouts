@@ -36,6 +36,8 @@ const usuarioVacio = {
 };
 
 
+const esPersonal = cuenta => ["Administrador", "Recepcionista"].includes(cuenta.rol);
+
 const filtrosVacios = {
   email: "",
   rolId: "",
@@ -96,15 +98,15 @@ function Usuarios() {
       ]);
 
       setUsuarios(
-        usuariosData
+        usuariosData.filter(esPersonal)
       );
 
       setTodosUsuarios(
-        usuariosData
+        usuariosData.filter(esPersonal)
       );
 
       setRoles(
-        rolesData
+        rolesData.filter(rol => ["Administrador", "Recepcionista"].includes(rol.nombre))
       );
 
     } catch (err) {
@@ -163,7 +165,7 @@ function Usuarios() {
         );
 
       setUsuarios(
-        datos
+        datos.filter(esPersonal)
       );
 
     } catch (err) {
@@ -193,7 +195,7 @@ function Usuarios() {
         await listarUsuarios();
 
       setUsuarios(
-        datos
+        datos.filter(esPersonal)
       );
 
     } catch (err) {
@@ -1096,6 +1098,7 @@ function Usuarios() {
                 guardarUsuario
               }
             >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
 
               <div className="usuario-form-grid">
@@ -1106,7 +1109,7 @@ function Usuarios() {
                 <div className="usuario-field usuario-full">
 
                   <label>
-                    Correo electrónico *
+                    Correo electrónico <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <div className="usuario-input-icon">
@@ -1137,7 +1140,7 @@ function Usuarios() {
                 <div className="usuario-field">
 
                   <label>
-                    Rol *
+                    Rol <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select
@@ -1178,7 +1181,7 @@ function Usuarios() {
                 <div className="usuario-field">
 
                   <label>
-                    Estado *
+                    Estado <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select
@@ -1212,7 +1215,7 @@ function Usuarios() {
 
                     {editandoId !== null
                       ? "Nueva contraseña"
-                      : "Contraseña *"}
+                      : "Contraseña"} {editandoId === null && <span className="required-mark" aria-hidden="true">*</span>}
 
                   </label>
 

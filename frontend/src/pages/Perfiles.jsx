@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   UsersRound,
-  UserPlus,
   Search,
   Pencil,
   Trash2,
@@ -80,7 +79,7 @@ function Perfiles() {
       setError("");
 
       const datos =
-        await listarPerfiles();
+        await listarPerfiles({ soloRegistrados: true });
 
       setPerfiles(datos);
       setTodosPerfiles(datos);
@@ -127,7 +126,7 @@ function Perfiles() {
 
       const datos =
         await listarPerfiles(
-          filtros
+          { ...filtros, soloRegistrados: true }
         );
 
       setPerfiles(datos);
@@ -149,20 +148,6 @@ function Perfiles() {
     );
 
     await cargarTodos();
-  };
-
-  const abrirNuevo = () => {
-
-    setEditandoId(null);
-
-    setFormulario(
-      perfilVacio
-    );
-
-    setError("");
-    setMensaje("");
-
-    setModalAbierto(true);
   };
 
   const abrirEditar = (perfil) => {
@@ -376,19 +361,12 @@ function Perfiles() {
           <h1>Perfiles</h1>
 
           <p>
-            Administra personas,
-            instituciones y grupos Scout.
+            Personas registradas con cuenta de Usuario o Miembro.
           </p>
 
         </div>
 
-        {puedeAdministrarPerfiles && <button
-          className="perfiles-add-button"
-          onClick={abrirNuevo}
-        >
-          <UserPlus size={18} />
-          Nuevo perfil
-        </button>}
+
 
       </div>
 
@@ -824,13 +802,14 @@ function Perfiles() {
                 guardarPerfil
               }
             >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
               <div className="perfil-form-grid">
 
                 <div className="perfil-field">
 
                   <label>
-                    Nombre *
+                    Nombre <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -851,7 +830,7 @@ function Perfiles() {
                 <div className="perfil-field">
 
                   <label>
-                    Tipo de perfil *
+                    Tipo de perfil <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select
@@ -923,7 +902,7 @@ function Perfiles() {
                 <div className="perfil-field">
 
                   <label>
-                    Correo de contacto *
+                    Correo de contacto <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input

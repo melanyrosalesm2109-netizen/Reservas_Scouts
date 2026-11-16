@@ -685,3 +685,5 @@
 .pago-actions button { font-size: 12px; min-height: 32px; }
 
 .pago-actions button.pago-review { width: auto; height: auto; padding: 8px 11px; color: #17475e; background: #eaf2f6; white-space: nowrap; }
+.pago-actions button.pago-reject { color: #a33c3c; background: #fbeaea; padding: 8px 11px; min-width: max-content; }
+.pago-actions button.pago-reject:hover { background: #f5d7d7; }

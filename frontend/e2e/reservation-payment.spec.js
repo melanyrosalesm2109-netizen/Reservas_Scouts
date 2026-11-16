@@ -41,7 +41,7 @@ test("SINPE requires a receipt and submits it together with the reservation", as
   await form.locator("#reserva-comprobante").setInputFiles({ name: "prueba.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
   await expect(form.getByRole("button", { name: "Enviar solicitud", exact: true })).toBeEnabled();
   await form.getByRole("button", { name: "Enviar solicitud", exact: true }).click();
-  await expect(page.getByText("Solicitud de reserva enviada correctamente.")).toBeVisible();
+  await expect(page.getByText("Reserva realizada correctamente. Puedes consultar su estado en Mis reservas.")).toBeVisible();
   expect(solicitud).toContain('"metodo":"SINPE Móvil"');
   expect(solicitud).toContain("%PDF-1.4 demo");
 });
@@ -55,6 +55,7 @@ test("expiry disables confirmation and allows requesting another hold", async ({
   await expect(form.getByRole("button", { name: "Enviar solicitud", exact: true })).toBeDisabled();
   await expect(form.getByText("El plazo terminó. El horario quedó libre para otros usuarios.")).toBeVisible();
   await form.getByRole("button", { name: "Volver a consultar y apartar" }).click();
+  await page.clock.runFor(1000);
   await expect(form.getByRole("timer")).toBeVisible();
 });
 

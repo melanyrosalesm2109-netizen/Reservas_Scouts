@@ -59,6 +59,8 @@ export async function listarPerfiles(
     );
   }
 
+  if (filtros.soloRegistrados) parametros.set("soloRegistrados", "true");
+
   const url =
     parametros.toString()
       ? `${API_URL}?${parametros.toString()}`
@@ -159,3 +161,5 @@ export async function completarPerfilPropio(datos) {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos)
   }));
 }
+
+export async function consultarMiPerfil() { return procesarRespuesta(await fetch(API_URL + "/mi-perfil")); }

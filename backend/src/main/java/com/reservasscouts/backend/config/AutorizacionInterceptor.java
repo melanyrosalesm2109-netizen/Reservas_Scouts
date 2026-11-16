@@ -273,6 +273,7 @@ public class AutorizacionInterceptor
                 usuarioRegular
                         && (
                         consultaReservasPropias
+                                || (HttpMethod.GET.matches(method) && path.equals("/api/perfiles/mi-perfil"))
                                 || consultaDisponibilidad
                                 || consultaFechasOcupadas
                                 || consultaEspacios

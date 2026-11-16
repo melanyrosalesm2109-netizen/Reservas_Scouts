@@ -27,6 +27,7 @@ import {
 import { useAuth } from "../context/useAuth";
 
 import "./Pagos.css";
+import RechazoPagoDialog from "../components/RechazoPagoDialog";
 import ComprobanteViewer from "../components/ComprobanteViewer";
 import { verificarPago } from "../services/reservaPagoService";
 
@@ -54,6 +55,7 @@ function Pagos() {
   const puedeGestionarPagos =
     usuario?.rol === "Administrador" || usuario?.rol === "Recepcionista";
 
+  const [pagoRechazo, setPagoRechazo] = useState(null);
   const [revisando, setRevisando] = useState(null);
   const [pagoComprobante, setPagoComprobante] = useState(null);
   const [pagos, setPagos] =
@@ -173,12 +175,10 @@ function Pagos() {
     await cargarInicial();
   };
 
-  const revisar = async (pago, aprobar) => {
-    if (!window.confirm(aprobar ? "Confirmas que el pago es correcto?" : "Rechazar el pago y cancelar la reserva?")) return;
-    const motivo = aprobar ? null : window.prompt("Motivo del rechazo (obligatorio):");
-    if (!aprobar && !motivo?.trim()) return;
+  const revisar = async pago => {
+    if (!window.confirm(pago.metodo === "Efectivo" ? "¿Confirmas que recibiste el pago en efectivo?" : "¿Confirmas que el pago es correcto?")) return;
     setRevisando(pago.id); setError("");
-    try { await verificarPago(pago.id, aprobar, motivo); await cargarInicial(); setMensaje(aprobar ? "Pago verificado y reserva aprobada." : "Pago rechazado y reserva cancelada."); }
+    try { await verificarPago(pago.id, true, null); await cargarInicial(); setMensaje("Pago registrado correctamente y reserva confirmada."); }
     catch (err) { setError(err.message); }
     finally { setRevisando(null); }
   };
@@ -461,6 +461,13 @@ function Pagos() {
   return (
 
     <div className="pagos-page">
+      {pagoRechazo && <RechazoPagoDialog pago={pagoRechazo} onCerrar={() => setPagoRechazo(null)} onConfirmar={async motivo => {
+        await verificarPago(pagoRechazo.id, false, motivo);
+        setPagoRechazo(null);
+        setMensaje("Pago rechazado y reserva cancelada. El horario está disponible nuevamente.");
+        await cargarInicial();
+      }} />}
+
       {pagoComprobante && <ComprobanteViewer pago={pagoComprobante} onCerrar={() => setPagoComprobante(null)} />}
 
       {/* CABECERA */}
@@ -828,8 +835,8 @@ function Pagos() {
                         <div className="pago-actions">
                           {pago.comprobante === "Comprobante adjunto" && <button type="button" className="pago-review" onClick={() => abrirComprobante(pago)}>Ver comprobante</button>}
                           {pago.estado === "PENDIENTE" && ["SINPE Móvil", "Transferencia bancaria", "Efectivo"].includes(pago.metodo) && <>
-                            <button type="button" className="pago-review" disabled={revisando === pago.id} onClick={() => revisar(pago, true)}>Verificar pago</button>
-                            <button type="button" disabled={revisando === pago.id} onClick={() => revisar(pago, false)}>Rechazar</button>
+                            <button type="button" className="pago-review" disabled={revisando === pago.id} onClick={() => revisar(pago)}>Verificar pago</button>
+                            <button type="button" className="pago-review pago-reject" disabled={revisando === pago.id} onClick={() => setPagoRechazo(pago)}>Rechazar</button>
                           </>}
 
                           <button
@@ -920,13 +927,14 @@ function Pagos() {
               className="pago-form"
               onSubmit={guardarPago}
             >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
               <div className="pago-form-grid">
 
                 <div className="pago-field pago-full">
 
                   <label>
-                    Reserva *
+                    Reserva <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select
@@ -968,7 +976,7 @@ function Pagos() {
                 <div className="pago-field">
 
                   <label>
-                    Monto *
+                    Monto <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -991,7 +999,7 @@ function Pagos() {
                 <div className="pago-field">
 
                   <label>
-                    Fecha de pago *
+                    Fecha de pago <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -1011,7 +1019,7 @@ function Pagos() {
                 <div className="pago-field">
 
                   <label>
-                    Método *
+                    Método <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select
@@ -1047,7 +1055,7 @@ function Pagos() {
                 <div className="pago-field">
 
                   <label>
-                    Estado *
+                    Estado <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select

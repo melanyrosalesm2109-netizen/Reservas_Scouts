@@ -7,6 +7,7 @@ test("rejects invalid credentials and preserves a valid admin session", async ({
   await page.goto("/auditoria");
   await expect(page).toHaveURL(/\/login$/);
 
+  await page.getByRole("link", { name: "Iniciar sesión", exact: true }).click();
   await page.getByPlaceholder("Ingrese su usuario o correo").fill(email);
   await page.getByPlaceholder("Ingrese su contraseña").fill("invalid-e2e-password");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();

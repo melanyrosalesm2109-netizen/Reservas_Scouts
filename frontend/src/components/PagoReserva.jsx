@@ -56,14 +56,14 @@ export default function PagoReserva({ espacio, inicio, fin, disponible, procesan
       <p className="pago-reserva-reloj" role="timer">Horario apartado para ti: {Math.floor(segundos / 60)}:{String(segundos % 60).padStart(2, "0")} restantes</p> :
       <div role="alert"><p>El plazo terminó. El horario quedó libre para otros usuarios.</p><button type="button" onClick={() => setIntento(i => i + 1)}>Volver a consultar y apartar</button></div>}
     <fieldset disabled={procesando || !listo || segundos <= 0 || Boolean(error)}>
-      <label htmlFor="reserva-metodo">Método de pago *</label>
+      <label htmlFor="reserva-metodo">Método de pago <span className="required-mark" aria-hidden="true">*</span></label>
       <select id="reserva-metodo" value={metodo} required onChange={e => { setMetodo(e.target.value); setArchivo(null); setErrorArchivo(""); setTarjeta({ numero: "", titular: "", vencimiento: "", cvv: "" }); }}>
         <option value="">Selecciona un método</option>
         {["SINPE Móvil", "Transferencia bancaria", "Tarjeta", "Efectivo"].map(m => <option key={m}>{m}</option>)}
       </select>
       {transferencia && <div className="pago-reserva-adjunto">
         <p>Adjunta el comprobante. El pago y la reserva quedarán pendientes hasta que recepción o administración lo revise.</p>
-        <label htmlFor="reserva-comprobante">Comprobante PDF, PNG o JPG (máximo 5 MB) *</label>
+        <label htmlFor="reserva-comprobante">Comprobante PDF, PNG o JPG (máximo 5 MB) <span className="required-mark" aria-hidden="true">*</span></label>
         <input key={metodo} id="reserva-comprobante" type="file" accept="application/pdf,image/png,image/jpeg" required onChange={e => {
           const file = e.target.files[0]; setArchivo(null); setErrorArchivo("");
           if (file && (file.size > 5 * 1024 * 1024 || !["application/pdf", "image/png", "image/jpeg"].includes(file.type))) {
@@ -73,14 +73,14 @@ export default function PagoReserva({ espacio, inicio, fin, disponible, procesan
         }} />
         {errorArchivo && <p role="alert">{errorArchivo}</p>}
       </div>}
-      {metodo === "Efectivo" && <p>Tu reserva se confirmará y el pago quedará pendiente para el día de llegada.</p>}
+      {metodo === "Efectivo" && <p>Al confirmar, tu reserva quedará registrada. El pago en efectivo quedará pendiente para el día de llegada.</p>}
       {metodo === "Tarjeta" && <div>
         <p>Simulación sin cobro real. Usa 4242 4242 4242 4242, código 123 y un vencimiento vigente. Otros números se rechazan. No ingreses datos de una tarjeta real.</p>
         <div className="pago-tarjeta-grid">
-          <label>Número de prueba *<input name="numero" inputMode="numeric" autoComplete="off" maxLength={19} required value={tarjeta.numero} onChange={cambiarTarjeta} /></label>
-          <label>Titular de prueba *<input name="titular" autoComplete="off" maxLength={100} required value={tarjeta.titular} onChange={cambiarTarjeta} /></label>
-          <label>Vencimiento *<input type="month" name="vencimiento" required value={tarjeta.vencimiento} onChange={cambiarTarjeta} /></label>
-          <label>Código de prueba *<input name="cvv" type="password" autoComplete="off" maxLength={3} required value={tarjeta.cvv} onChange={cambiarTarjeta} /></label>
+          <label>Número de prueba <span className="required-mark" aria-hidden="true">*</span><input name="numero" inputMode="numeric" autoComplete="off" maxLength={19} required value={tarjeta.numero} onChange={cambiarTarjeta} /></label>
+          <label>Titular de prueba <span className="required-mark" aria-hidden="true">*</span><input name="titular" autoComplete="off" maxLength={100} required value={tarjeta.titular} onChange={cambiarTarjeta} /></label>
+          <label>Vencimiento <span className="required-mark" aria-hidden="true">*</span><input type="month" name="vencimiento" required value={tarjeta.vencimiento} onChange={cambiarTarjeta} /></label>
+          <label>Código de prueba <span className="required-mark" aria-hidden="true">*</span><input name="cvv" type="password" autoComplete="off" maxLength={3} required value={tarjeta.cvv} onChange={cambiarTarjeta} /></label>
         </div>
       </div>}
     </fieldset>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Activity,
@@ -27,6 +27,126 @@ import { listarReservas } from "../services/reservaService";
 import "./Auditoria.css";
 
 
+async function obtenerDatosAuditoria() {
+  const obtenerSeguro = async (funcion) => {
+    try {
+      const datos = await funcion();
+
+      if (Array.isArray(datos)) {
+        return datos;
+      }
+
+      if (Array.isArray(datos?.content)) {
+        return datos.content;
+      }
+
+      if (Array.isArray(datos?.items)) {
+        return datos.items;
+      }
+
+      return [];
+    } catch {
+      return [];
+    }
+  };
+
+
+  const [
+    resumenData,
+    detalleData,
+    perfilesData,
+    espaciosData,
+    usuariosData,
+    reservasData,
+    rolesData,
+  ] = await Promise.all([
+    obtenerResumenAuditoria(),
+    obtenerDetalleAuditoria(),
+    obtenerSeguro(() => listarPerfiles()),
+    obtenerSeguro(() => listarEspacios()),
+    obtenerSeguro(() => listarUsuarios()),
+    obtenerSeguro(() => listarReservas()),
+    obtenerSeguro(() => listarRoles()),
+  ]);
+
+
+  const perfiles = {};
+
+  perfilesData.forEach((perfil) => {
+    const id =
+      perfil.idPerfil ??
+      perfil.id;
+
+    if (id != null) {
+      perfiles[String(id)] =
+        perfil.nombre ||
+        `Perfil #${id}`;
+    }
+  });
+
+
+  const espacios = {};
+
+  espaciosData.forEach((espacio) => {
+    const id = espacio.id;
+
+    if (id != null) {
+      espacios[String(id)] =
+        espacio.nombre ||
+        `Espacio #${id}`;
+    }
+  });
+
+
+  const usuarios = {};
+
+  usuariosData.forEach((usuario) => {
+    const id = usuario.id;
+
+    if (id != null) {
+      usuarios[String(id)] =
+        usuario.email ||
+        usuario.nombre ||
+        `Usuario #${id}`;
+    }
+  });
+
+
+  const reservas = {};
+  const reservaEspacios = {};
+
+  reservasData.forEach((reserva) => {
+    const id = reserva.id;
+
+    if (id != null) {
+      reservaEspacios[String(id)] = reserva.espacio;
+      reservas[String(id)] =
+        reserva.codigo ||
+        `Reserva #${id}`;
+    }
+  });
+
+
+  const roles = {};
+
+  rolesData.forEach((rol) => {
+    const id = rol.id;
+
+    if (id != null) {
+      roles[String(id)] =
+        rol.nombre ||
+        `Rol #${id}`;
+    }
+  });
+
+
+  return {
+    resumen: Array.isArray(resumenData) ? resumenData : [],
+    eventos: Array.isArray(detalleData) ? detalleData : [],
+    catalogos: { perfiles, espacios, usuarios, reservas, roles, reservaEspacios },
+  };
+}
+
 function Auditoria() {
     const convertirFechaAuditoria = (valor) => {
     if (!valor) return null;
@@ -40,7 +160,7 @@ function Auditoria() {
     const fecha = new Date(
       tieneZonaHoraria
         ? texto
-        : `${texto}Z`
+        : `${texto}${import.meta.env.VITE_AUDIT_OFFSET || "Z"}`
     );
 
     if (Number.isNaN(fecha.getTime())) {
@@ -87,6 +207,7 @@ function Auditoria() {
     usuarios: {},
     reservas: {},
     roles: {},
+    reservaEspacios: {},
   });
 
 
@@ -94,141 +215,19 @@ function Auditoria() {
   // CARGAR AUDITORÍA Y CATÁLOGOS
   // =====================================================
 
+  const aplicarDatosAuditoria = useCallback((datos) => {
+    setResumen(datos.resumen);
+    setEventos(datos.eventos);
+    setCatalogos(datos.catalogos);
+  }, []);
+
   const cargarAuditoria = async () => {
     setCargando(true);
     setError("");
 
     try {
-      const obtenerSeguro = async (funcion) => {
-        try {
-          const datos = await funcion();
-
-          if (Array.isArray(datos)) {
-            return datos;
-          }
-
-          if (Array.isArray(datos?.content)) {
-            return datos.content;
-          }
-
-          if (Array.isArray(datos?.items)) {
-            return datos.items;
-          }
-
-          return [];
-        } catch {
-          return [];
-        }
-      };
-
-
-      const [
-        resumenData,
-        detalleData,
-        perfilesData,
-        espaciosData,
-        usuariosData,
-        reservasData,
-        rolesData,
-      ] = await Promise.all([
-        obtenerResumenAuditoria(),
-        obtenerDetalleAuditoria(),
-        obtenerSeguro(() => listarPerfiles()),
-        obtenerSeguro(() => listarEspacios()),
-        obtenerSeguro(() => listarUsuarios()),
-        obtenerSeguro(() => listarReservas()),
-        obtenerSeguro(() => listarRoles()),
-      ]);
-
-
-      setResumen(
-        Array.isArray(resumenData)
-          ? resumenData
-          : []
-      );
-
-      setEventos(
-        Array.isArray(detalleData)
-          ? detalleData
-          : []
-      );
-
-
-      const perfiles = {};
-
-      perfilesData.forEach((perfil) => {
-        const id =
-          perfil.idPerfil ??
-          perfil.id;
-
-        if (id != null) {
-          perfiles[String(id)] =
-            perfil.nombre ||
-            `Perfil #${id}`;
-        }
-      });
-
-
-      const espacios = {};
-
-      espaciosData.forEach((espacio) => {
-        const id = espacio.id;
-
-        if (id != null) {
-          espacios[String(id)] =
-            espacio.nombre ||
-            `Espacio #${id}`;
-        }
-      });
-
-
-      const usuarios = {};
-
-      usuariosData.forEach((usuario) => {
-        const id = usuario.id;
-
-        if (id != null) {
-          usuarios[String(id)] =
-            usuario.email ||
-            usuario.nombre ||
-            `Usuario #${id}`;
-        }
-      });
-
-
-      const reservas = {};
-
-      reservasData.forEach((reserva) => {
-        const id = reserva.id;
-
-        if (id != null) {
-          reservas[String(id)] =
-            reserva.codigo ||
-            `Reserva #${id}`;
-        }
-      });
-
-
-      const roles = {};
-
-      rolesData.forEach((rol) => {
-        const id = rol.id;
-
-        if (id != null) {
-          roles[String(id)] =
-            rol.nombre ||
-            `Rol #${id}`;
-        }
-      });
-
-
-      setCatalogos({
-        perfiles,
-        espacios,
-        usuarios,
-        reservas,
-        roles,
-      });
+      const datos = await obtenerDatosAuditoria();
+      aplicarDatosAuditoria(datos);
 
     } catch (err) {
       setError(
@@ -242,8 +241,22 @@ function Auditoria() {
 
 
   useEffect(() => {
-    queueMicrotask(() => { void cargarAuditoria(); });
-  }, []);
+    let activo = true;
+
+    async function cargarInicial() {
+      try {
+        const datos = await obtenerDatosAuditoria();
+        if (activo) aplicarDatosAuditoria(datos);
+      } catch (err) {
+        if (activo) setError(err.message || "No se pudo cargar la auditoría.");
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    void cargarInicial();
+    return () => { activo = false; };
+  }, [aplicarDatosAuditoria]);
 
 
   // =====================================================
@@ -1566,6 +1579,13 @@ function Auditoria() {
             </div>
 
 
+            <div className="audit-resource-name"><strong>Espacio relacionado</strong><p>{(() => {
+              const detalle = parsearJson(seleccionado.detalle);
+              const antes = parsearJson(seleccionado.valoresAnteriores) || detalle?.antes || {};
+              const despues = parsearJson(seleccionado.valoresNuevos) || detalle?.despues || {};
+              const espacioId = despues.espacioId || antes.espacioId;
+              return catalogos.espacios[String(espacioId)] || catalogos.reservaEspacios?.[String(despues.reservaId || antes.reservaId)] || (seleccionado.origen?.toLowerCase() === "reservas" ? catalogos.reservaEspacios?.[String(seleccionado.registroId)] : null) || (seleccionado.origen?.toLowerCase() === "espacios" ? despues.nombre || antes.nombre || catalogos.espacios[String(seleccionado.registroId)] : null) || "No disponible en este evento";
+            })()}</p></div>
             {/* EVENTOS DE ACCESO */}
 
             {esEventoAcceso && (

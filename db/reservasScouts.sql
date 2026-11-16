@@ -2775,7 +2775,7 @@ BEGIN
       AND (@pEstado IS NULL OR r.estado = @pEstado)
       AND (@pEspacioId IS NULL OR r.espacioId = @pEspacioId)
       AND (@pSolicitantePerfilId IS NULL OR r.solicitantePerfilId = @pSolicitantePerfilId)
-      AND (@pCreadorUsuarioId IS NULL OR r.creadoPorUsuarioId = @pCreadorUsuarioId)
+      AND (@pCreadorUsuarioId IS NULL OR r.creadoPorUsuarioId = @pCreadorUsuarioId OR p.usuarioId = @pCreadorUsuarioId)
       AND (@pFechaDesde IS NULL OR CONVERT(DATE, r.fechaInicio) >= @pFechaDesde)
       AND (@pFechaHasta IS NULL OR CONVERT(DATE, r.fechaFin) <= @pFechaHasta)
     ORDER BY r.fechaInicio DESC;
@@ -5204,4 +5204,22 @@ END;
 GO
 GRANT EXECUTE ON dbo.paNotificacionesListar TO reservas_app;
 GRANT EXECUTE ON dbo.paPagoVerificar TO reservas_app;
+GO
+
+USE [reservasScouts];
+GO
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE dbo.paUsuariosRegistradosIds
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT u.id
+    FROM dbo.usuarios u
+    INNER JOIN dbo.roles r ON r.id = u.rolId
+    WHERE r.nombre IN (N'Usuario', N'Miembro');
+END;
+GO
+GRANT EXECUTE ON OBJECT::dbo.paUsuariosRegistradosIds TO reservas_app;
 GO

@@ -575,6 +575,7 @@ function Espacios() {
               className="espacio-form"
               onSubmit={guardarEspacio}
             >
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p>
 
               <div className="espacio-form-grid">
 
@@ -582,7 +583,7 @@ function Espacios() {
                 <div className="espacio-field">
 
                   <label>
-                    Nombre *
+                    Nombre <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -601,7 +602,7 @@ function Espacios() {
                 <div className="espacio-field">
 
                   <label>
-                    Ubicación *
+                    Ubicación <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -620,7 +621,7 @@ function Espacios() {
                 <div className="espacio-field">
 
                   <label>
-                    Capacidad *
+                    Capacidad <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -639,7 +640,7 @@ function Espacios() {
                 <div className="espacio-field">
 
                   <label>
-                    Costo *
+                    Costo <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <input
@@ -659,7 +660,7 @@ function Espacios() {
                 <div className="espacio-field">
 
                   <label>
-                    Estado *
+                    Estado <span className="required-mark" aria-hidden="true">*</span>
                   </label>
 
                   <select

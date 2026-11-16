@@ -1,0 +1,104 @@
+/* Shared responsive surfaces and controls, scoped to the application. */
+.main-content { padding: clamp(22px, 2.5vw, 40px); }
+.main-content > div { width: 100%; min-width: 0; }
+.main-content :is(h1, h2, h3, p) { overflow-wrap: anywhere; }
+.main-content h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.15; letter-spacing: -.65px; }
+.main-content :is(input, select, textarea) { min-width: 0; max-width: 100%; accent-color: #a67c3d; }
+.main-content :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #bf9656; outline-offset: 3px; }
+.main-content :is(button, a) { -webkit-tap-highlight-color: transparent; }
+.main-content button:disabled { cursor: not-allowed; }
+.main-content :is(.espacios-panel, .reservas-panel, .pagos-panel, .perfiles-panel, .usuarios-panel, .dashboard-card, .backup-card, .audit-panel, .notificacion-card) { border-radius: 16px; border-color: #e7e1d8; box-shadow: 0 7px 24px #14354a06; }
+.main-content :is(.dashboard-stat, .espacio-stat, .pago-stat, .perfil-stat, .usuario-stat) { border-radius: 14px; }
+.main-content :is(.espacios-header, .reservas-header, .pagos-header, .perfiles-header, .usuarios-header, .dashboard-header, .audit-header, .notificaciones-header, .backup-heading) { gap: 20px; }
+.main-content :is(.espacios-filtros-reales, .reservas-filtros-reales, .pagos-filtros, .perfiles-filtros, .usuarios-filtros) > * { min-width: 0; }
+.main-content :is(.space-name, .table-person, .table-space, .perfil-name, .usuario-name) { min-width: 0; }
+.main-content :is(.space-name, .table-person, .table-space, .perfil-name, .usuario-name) > div { min-width: 0; }
+.main-content table :is(td, th) { vertical-align: middle; }
+.notificaciones-tabs, .notificaciones-tabs button { min-width: 0; }
+.notificaciones-tabs button { white-space: normal; }
+.reservation-modal, .espacio-modal, .pago-modal, .perfil-modal, .usuario-modal, .audit-modal { max-height: calc(100dvh - 40px); }
+@media (min-width: 1440px) { .main-content { padding-inline: max(40px, calc((100vw - 1540px) / 2)); } }
+@media (max-width: 1100px) {
+  .main-content :is(.espacios-filtros-reales, .reservas-filtros-reales, .pagos-filtros, .perfiles-filtros, .usuarios-filtros) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .main-content :is(.dashboard-bottom-grid) { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 768px) {
+  .main-content :is(.espacios-header, .reservas-header, .pagos-header, .perfiles-header, .usuarios-header, .dashboard-header, .audit-header, .notificaciones-header, .backup-heading) { flex-wrap: wrap; }
+  .main-content :is(.dashboard-stats, .espacios-stats, .pagos-stats, .perfiles-stats, .usuarios-stats) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .main-content :is(.dashboard-card, .backup-card, .mi-perfil-reservas) { min-width: 0; }
+  .comprobante-dialog header { align-items: flex-start; }
+  .comprobante-dialog header > div { min-width: 0; }
+  .comprobante-dialog h2 { font-size: 19px; overflow-wrap: anywhere; }
+  .comprobante-dialog header button { flex-shrink: 0; }
+}
+@media (max-width: 640px) {
+  .main-content { padding: 24px 14px 36px; }
+  .main-content h1 { font-size: 30px; }
+  .main-content :is(input, select, textarea), .public-auth-dialog :is(input,select,textarea), .rechazo-pago-dialog textarea { font-size: 16px; }
+  .main-content :is(button, input:not([type=checkbox]):not([type=radio]), select), .public-auth-dialog button, .rechazo-pago-dialog button { min-height: 44px; }
+  .main-content :is(.space-edit, .space-delete, .pago-edit, .pago-delete, .perfil-edit, .perfil-delete, .usuario-edit, .usuario-delete, .table-actions button) { min-width: 44px; }
+  .main-content :is(.espacios-filtros-reales, .reservas-filtros-reales, .pagos-filtros, .perfiles-filtros, .usuarios-filtros) { grid-template-columns: minmax(0,1fr); padding: 16px; }
+  .main-content :is(.dashboard-stats, .espacios-stats, .pagos-stats, .perfiles-stats, .usuarios-stats, .reservas-summary, .mi-perfil-resumen) { grid-template-columns: minmax(0,1fr); gap: 12px; }
+  .main-content :is(.reservation-form-grid, .espacio-form-grid, .pago-form-grid, .perfil-form-grid, .usuario-form-grid) { grid-template-columns: minmax(0,1fr); }
+  .main-content :is(.reservation-full, .pago-full, .usuario-full, .espacio-field.full, .perfil-field.full) { grid-column: auto; }
+  .main-content :is(.reservation-form-actions, .espacio-form-actions, .pago-form-actions, .perfil-form-actions, .usuario-form-actions) { flex-wrap: wrap; gap: 10px; }
+  .main-content :is(.reservation-form-actions, .espacio-form-actions, .pago-form-actions, .perfil-form-actions, .usuario-form-actions) > button { flex: 1 1 130px; }
+  .main-content :is(.reservas-table-wrapper, .espacios-table-wrapper, .pagos-table-wrapper, .perfiles-table-wrapper, .usuarios-table-wrapper, .audit-table-wrap, .dashboard-table-wrapper) { overflow: visible; }
+  .main-content table.responsive-data-table { display: block; width: 100%; min-width: 0; border: 0; }
+  .main-content table.responsive-data-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .main-content table.responsive-data-table tbody { display: grid; gap: 12px; padding: 12px; }
+  .main-content table.responsive-data-table tbody tr { display: block; margin: 0; padding: 15px; border: 1px solid #e7e2d9; border-radius: 12px; background: white; box-shadow: 0 3px 12px #102f4305; }
+  .main-content table.responsive-data-table tbody tr:hover { background: #fffdfa; }
+  .main-content table.responsive-data-table tbody td { display: grid; grid-template-columns: minmax(74px, .7fr) minmax(0,1.3fr); align-items: start; gap: 12px; width: 100%; max-width: 100%; padding: 9px 0; border: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; font-size: 13px; }
+  .main-content table.responsive-data-table tbody td + td { border-top: 1px solid #f2eee7; }
+  .main-content table.responsive-data-table tbody td::before { content: attr(data-column); font-size: 10px; line-height: 1.7; font-weight: 700; color: #7d8c94; text-transform: uppercase; letter-spacing: .5px; }
+  .main-content table.responsive-data-table tbody td[colspan] { display: block; text-align: center; }
+  .main-content table.responsive-data-table tbody td[colspan]::before { display: none; }
+  .main-content table.responsive-data-table td > * { min-width: 0; max-width: 100%; }
+  .main-content table.responsive-data-table :is(.space-name, .table-person, .table-space, .perfil-name, .usuario-name) { flex-wrap: wrap; gap: 8px; }
+  .main-content table.responsive-data-table :is(.pago-actions, .space-actions, .perfil-actions, .usuario-actions, .table-actions) { display: flex; flex-wrap: wrap; gap: 8px; justify-content: start; }
+  .main-content table.responsive-data-table :is(.space-name small, .perfil-name small, .usuario-name small) { white-space: normal; overflow-wrap: anywhere; }
+  .reservation-modal-overlay, .espacio-modal-overlay, .pago-modal-overlay, .perfil-modal-overlay, .usuario-modal-overlay, .audit-modal-backdrop { padding: 12px; }
+  .reservation-modal, .espacio-modal, .pago-modal, .perfil-modal, .usuario-modal, .audit-modal { width: 100%; min-width: 0; max-height: calc(100dvh - 24px); border-radius: 14px; }
+  .main-content :is(.reservation-modal-header, .espacio-modal-header, .pago-modal-header, .perfil-modal-header, .usuario-modal-header, .audit-modal-heading) { padding: 19px; align-items: flex-start; }
+  .main-content :is(.reservation-modal-header, .espacio-modal-header, .pago-modal-header, .perfil-modal-header, .usuario-modal-header, .audit-modal-heading) h2 { font-size: 24px; }
+  .main-content :is(.reservation-form, .espacio-form, .pago-form, .perfil-form, .usuario-form) { padding: 18px; }
+  .main-content .audit-modal-info { grid-template-columns: minmax(0,1fr); }
+  .main-content .audit-resource-name { margin-inline: 18px; }
+  .main-content .backup-warning { align-items: flex-start; font-size: 13px; }
+  .main-content .backup-warning > svg { flex-shrink: 0; }
+  .notificaciones-tabs { gap: 8px; }
+  .notificaciones-tabs button { flex-basis: calc(50% - 8px); padding: 10px; font-size: 12px; }
+  .notificacion-acciones { display: grid; grid-template-columns: minmax(0,1fr); }
+  .notificacion-acciones :is(button,a) { justify-content: center; width: 100%; }
+  .topbar-account { gap: 10px; }
+  .topbar-user { flex: 1; }
+  .topbar-user-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  .topbar-user-info span { max-width: min(130px,30vw); }
+  .topbar-notifications { width: 38px; height: 40px; }
+  .public-photo-arrows button { width: 44px; height: 44px; }
+}
+@media (max-width: 370px) {
+  .topbar-user-info span { max-width: 92px; }
+  .topbar-account { gap: 8px; }
+  .topbar-logout { gap: 5px; padding: 0 8px; }
+  .topbar-brand h2 { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .main-content *, .topbar * { animation: none !important; transition: none !important; } }
+@media (min-width: 360px) and (max-width: 640px) {
+  .main-content :is(.dashboard-stats, .espacios-stats, .pagos-stats, .perfiles-stats, .usuarios-stats, .reservas-summary, .mi-perfil-resumen, .audit-stats) { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .main-content :is(.espacio-stat, .pago-stat, .perfil-stat, .usuario-stat, .dashboard-stat, .audit-stat, .reservas-summary > div) { padding: 14px 12px; min-width: 0; gap: 9px; }
+  .main-content :is(.espacio-stat, .pago-stat, .perfil-stat, .usuario-stat, .dashboard-stat, .audit-stat, .reservas-summary > div) > svg { flex-shrink: 0; width: 18px; }
+  .main-content :is(.espacio-stat, .pago-stat, .perfil-stat, .usuario-stat, .dashboard-stat, .audit-stat, .reservas-summary > div) span { font-size: 11px; }
+  .main-content .reservas-summary strong { font-size: 22px; }
+}
+@media (min-width: 360px) and (max-width: 640px) {
+  .main-content .dashboard-stat { flex-direction: column; align-items: flex-start; }
+  .main-content .dashboard-stat-content { min-width: 0; width: 100%; }
+  .main-content .dashboard-money { font-size: 24px; white-space: normal; }
+  .main-content :is(.espacio-stat, .pago-stat, .perfil-stat, .usuario-stat, .audit-stat) > div { min-width: 0; }
+}
+@media (pointer: coarse) {
+  .main-content :is(button, select, input:not([type=checkbox]):not([type=radio])), .topbar-logout, .topbar-dropdown summary, .public-signin { min-height: 44px; }
+  .main-content :is(input,select,textarea) { font-size: 16px; }
+}

@@ -115,6 +115,8 @@ test("prefills the signed-in user's profile and keeps activity fields editable",
   await form.locator('[name="responsable"]').fill("Nombre ajustado");
   await expect(form.locator('[name="responsable"]')).toHaveValue("Nombre ajustado");
   await form.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(page).toHaveURL(/\/espacios$/);
+  await page.goto("/reservas");
   await page.getByRole("button", { name: "Nueva reserva", exact: true }).click();
   form = page.locator(".reservation-form");
   await expect(form.locator('[name="responsable"]')).toHaveValue("Persona de prueba");
@@ -172,7 +174,7 @@ test("a user without a profile completes their own data before booking", async (
   await form.locator('[name="fechaFin"]').fill("2026-11-26T17:00");
   await form.locator("#reserva-metodo").selectOption("Efectivo");
   await form.getByRole("button", { name: "Enviar solicitud", exact: true }).click();
-  await expect(page.getByText("Solicitud de reserva enviada correctamente.")).toBeVisible();
+  await expect(page.getByText("Reserva realizada correctamente. El pago en efectivo queda pendiente para el día de llegada.")).toBeVisible();
   expect(perfilCreado.nombre).toBe("Persona nueva");
   expect(perfilCreado.usuarioId).toBeUndefined();
   expect(reservaCreada.solicitantePerfilId).toBe(55);

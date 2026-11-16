@@ -65,7 +65,7 @@ export default function Notificaciones() {
           const llegadaFutura = n.fechaInicio.slice(0, 10) > hoy;
           return <article className="notificacion-card" key={tab === "reservas" ? n.reservaId : n.pagoId}>
             <div className="notificacion-cabecera"><div><strong>{n.codigo}</strong><h2>{n.espacio}</h2><p>{n.solicitante} · {n.participantes} participantes</p></div>
-              <span className={`notificacion-estado ${pendiente ? "pendiente" : ""}`}>{pendiente ? n.metodo === "Efectivo" ? "Por cobrar al llegar" : "Comprobante por revisar" : n.reservaEstado}</span></div>
+              <span className={`notificacion-estado ${pendiente ? "pendiente" : ""}`}>{pendiente ? n.metodo === "Efectivo" ? "Por cobrar al llegar" : "Comprobante por revisar" : n.reservaEstado === "APROBADA" ? "Reservada" : n.reservaEstado}</span></div>
             <div className="notificacion-detalles"><p><Clock3 size={15} />{fecha(n.fechaInicio)} — {fecha(n.fechaFin)}</p>
               <p><ReceiptText size={15} />{n.metodo || "Sin método de pago"}{n.pagoId ? ` · ${moneda(n.monto)} · ${n.pagoEstado}` : ""}</p></div>
             {n.revisadoPor && <p className="notificacion-revision">Revisado por {n.revisadoPor} · {fecha(n.revisadaEn)}{n.motivo ? ` · Motivo: ${n.motivo}` : ""}</p>}
@@ -82,7 +82,7 @@ export default function Notificaciones() {
             {pendiente && n.metodo === "Efectivo" && llegadaFutura && <p className="notificacion-revision">Disponible para registrar el cobro desde el {n.fechaInicio.slice(0, 10)}.</p>}
             {pendiente && n.metodo !== "Efectivo" && !n.tieneComprobante && <p role="status">Falta el comprobante. No se puede aprobar todavía.</p>}
             {pendiente && rechazando === n.pagoId && <form className="notificacion-rechazo" onSubmit={e => { e.preventDefault(); void resolver(n, false); }}>
-              <label htmlFor={`motivo-${n.pagoId}`}>Motivo del rechazo *</label><textarea id={`motivo-${n.pagoId}`} value={motivo} onChange={e => setMotivo(e.target.value)} required maxLength={500} />
+              <p className="required-fields-note"><span className="required-mark">*</span> indica un campo obligatorio.</p><label htmlFor={`motivo-${n.pagoId}`}>Motivo del rechazo <span className="required-mark" aria-hidden="true">*</span></label><textarea id={`motivo-${n.pagoId}`} value={motivo} onChange={e => setMotivo(e.target.value)} required maxLength={500} />
               <p>El rechazo cancela la reserva y libera el horario.</p><button type="submit" disabled={procesando !== null || !motivo.trim()}>Confirmar rechazo</button>
               <button type="button" onClick={() => setRechazando(null)}>Cancelar</button>
             </form>}

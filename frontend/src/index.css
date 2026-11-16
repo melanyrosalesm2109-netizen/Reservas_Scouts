@@ -54,4 +54,5 @@ textarea {
 
 button {
   transition: 0.2s ease;
-}
+}.required-mark { color: #bd2929 !important; font-weight: 700; }
+.required-fields-note { color: #69777d; font-size: 12px; line-height: 1.6; margin: 0 0 17px; grid-column: 1 / -1; }

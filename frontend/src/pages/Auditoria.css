@@ -1217,4 +1217,6 @@
     grid-template-columns:
       82px 1fr;
   }
-}
+}.audit-resource-name { margin: 0 24px 20px; padding: 15px; border: 1px solid #e4ded5; border-radius: 10px; color: #12364b; }
+.audit-resource-name strong { display: block; font-size: 11px; color: #8c744c; margin-bottom: 6px; }
+.audit-resource-name p { font-size: 15px; }

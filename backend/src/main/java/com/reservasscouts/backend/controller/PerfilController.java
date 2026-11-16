@@ -75,22 +75,31 @@ public class PerfilController {
                 request.telefono(), request.correoContacto(), "Persona", null));
     }
 
+    @GetMapping("/mi-perfil")
+    public List<Perfil> miPerfil(HttpSession session) {
+        return service.filtrar(null, null, null, null, (Integer) session.getAttribute("usuarioId"));
+    }
+
     @GetMapping
     public List<Perfil> filtrar(
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String identificacion,
             @RequestParam(required = false) String correoContacto,
             @RequestParam(required = false) String tipoPerfil,
-            @RequestParam(required = false) Integer usuarioId
+            @RequestParam(required = false) Integer usuarioId,
+            @RequestParam(defaultValue = "false") boolean soloRegistrados
     ) {
 
-        return service.filtrar(
+        var perfiles = service.filtrar(
                 nombre,
                 identificacion,
                 correoContacto,
                 tipoPerfil,
                 usuarioId
         );
+        if (!soloRegistrados) return perfiles;
+        var clientes = jdbcTemplate.queryForList("EXEC dbo.paUsuariosRegistradosIds", Integer.class);
+        return perfiles.stream().filter(p -> p.usuarioId() != null && clientes.contains(p.usuarioId())).toList();
     }
 
     @GetMapping("/{idPerfil}")
